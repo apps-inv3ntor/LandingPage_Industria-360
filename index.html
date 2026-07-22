@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Indústria 360 — Portfólio Técnico Restrito</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     GATE — TELA DE LOGIN
+     ============================================================ -->
+<div id="gate">
+  <div class="gate-card chamfer">
+    <div class="gate-brand">
+      <div class="mark">INDÚSTRIA<span>.</span>360</div>
+      <div class="id-line">Eduardo — Engenheiro de Produção | Portfólio Técnico</div>
+    </div>
+
+    <div class="gate-status">
+      Acesso Restrito. Insira o Token enviado exclusivamente com o
+      briefing do candidato para liberar o console. <strong>— "Token no PDF"</strong>
+    </div>
+
+    <form id="gate-form" autocomplete="off">
+      <div class="field">
+        <label for="gate-user">Usuário</label>
+        <input id="gate-user" type="text" value="EMPRESA" disabled />
+      </div>
+      <div class="field">
+        <label for="gate-token">Token de acesso</label>
+        <input id="gate-token" type="password" placeholder="[ DIGITE O TOKEN DE ACESSO ENVIADO ]" required />
+      </div>
+      <button id="gate-submit" type="submit" class="btn btn-solid">Validar acesso</button>
+      <div id="gate-error" class="gate-error" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     CONTEÚDO PRINCIPAL (liberado após validação do token)
+     ============================================================ -->
+<div id="app">
+
+  <!-- ---------- BOAS-VINDAS ---------- -->
+  <div class="welcome-strip">
+    <div class="wrap welcome-inner">
+      <span class="welcome-dot"></span>
+      <span>Acesso validado. Bem-vindo(a) ao portal técnico da Indústria 360 — bom te ver por aqui.</span>
+    </div>
+  </div>
+
+  <!-- ---------- HERO (Seção C) ---------- -->
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">Gestão &amp; Hiperautomação Industrial</span>
+        <h1>Gestão e Hiperautomação Industrial <span class="accent">que se transforma em App</span> — da dor do chão de fábrica ao C-Level.</h1>
+        <p class="lede">Sistemas determinísticos de alta densidade analítica, desenvolvidos client-side e serverless-edge.</p>
+        <div class="hero-cta">
+          <a href="#apps" class="btn btn-solid">Ver os 5 apps</a>
+          <a href="#contato" class="btn">Falar com Eduardo</a>
+        </div>
+      </div>
+      <div class="hero-visual chamfer">
+        <img src="assets/hero/hero-banner.jpg" alt="Engenheiro industrial operando um painel HUD com KPIs de gestão de projetos, manutenção e produção" />
+        <span class="hero-tag">Indústria 4.0 — Console Ativo</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ---------- SEÇÃO F — CARD DE EXEMPLO (APP 1: PMP-PMO) ---------- -->
+  <section class="app-section" id="apps">
+    <div class="wrap">
+      <div class="app-card">
+
+        <div class="app-media">
+          <div class="player chamfer" data-player-id="pmp">
+            <img class="thumb" src="assets/thumbs/pmp-pmo.png" alt="Thumbnail do vídeo de demonstração do app PMP-PMO" />
+            <button class="play-btn" data-youtube-id="rnodcNFOX6s" data-player-id="pmp" aria-label="Reproduzir vídeo de demonstração do PMP-PMO">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="yt-target" id="yt-target-pmp"></div>
+            <div class="yt-mask-top">PMP-PMO &mdash; DEMONSTRAÇÃO</div>
+            <div class="yt-cover">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span class="yt-cover-text">Carregando vídeo…</span>
+            </div>
+            <div class="custom-controls" data-controls-for="pmp">
+              <button class="cc-btn" data-action="toggle-play" aria-label="Play/Pause">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+              <input type="range" class="cc-seek" data-seek-for="pmp" min="0" max="1000" value="0" aria-label="Progresso do vídeo" />
+              <div class="cc-quality">
+                <button class="cc-q-btn active" data-quality="hd720">720p</button>
+                <button class="cc-q-btn" data-quality="medium">360p</button>
+              </div>
+              <button class="cc-btn" data-action="fullscreen" aria-label="Tela cheia">
+                <svg class="icon-expand" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zM5 10h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <svg class="icon-compress" viewBox="0 0 24 24" style="display:none"><path d="M9 9H4v2h7V4H9v5zm6-5h-2v7h7V9h-5V4zm0 16h2v-7h-2v7zM4 15h5v5h2v-7H4v2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="player-label">
+            <span>PMP-PMO_DEMO.MP4</span>
+            <span class="rec">REC</span>
+          </div>
+        </div>
+
+        <div class="app-copy">
+          <span class="app-kicker">Convertendo dados brutos em decisão prescritiva</span>
+          <h2>Ecossistema PMP-PMO — Indústria 4.0</h2>
+          <p>A engenharia e a gestão de projetos no limiar da automação analítica. Ao lado, você assiste à materialização da Manutenção 4.0 integrada às mais rigorosas metodologias do PMBOK/PMI — uma plataforma analítica proprietária de alta densidade, desenvolvida sob medida para missões críticas em ambientes industriais e grandes obras de engenharia. Uma solução projetada para operar de forma determinística client-side e serverless-edge.</p>
+
+          <h3 class="sub">Cronogramas, custos e recursos</h3>
+          <ul>
+            <li><strong>Gantt Ultra &amp; Linha HOJE:</strong> WBS avançada, baseline vs. real, Caminho Crítico em tempo real.</li>
+            <li><strong>Motor CPM Nativo:</strong> Forward/Backward Pass real, folgas negativas acusadas na hora.</li>
+            <li><strong>Simulador de Monte Carlo (5.000 iterações):</strong> curvas de probabilidade P50, P80 e P90.</li>
+            <li><strong>EVM ERP:</strong> Planejado × Entregue × Custo Real, com EAC e TCPI automatizados.</li>
+          </ul>
+
+          <h3 class="sub">Governança e análise preditiva</h3>
+          <ul>
+            <li><strong>Matriz de Riscos 5×5 (ISO 31000):</strong> exposição financeira por quadrante.</li>
+            <li><strong>Módulo Paradas 24h:</strong> correlação de microparadas e Bad Actors do chão de fábrica.</li>
+            <li><strong>Motor Heurístico Local:</strong> classifica ativos e projetos sem depender de internet ou LLMs externos.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- MANIFESTO (Seção D) ---------- -->
+  <section class="manifesto">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">O Manifesto</span>
+        <h2>Três gargalos que drenam sua operação silenciosamente</h2>
+        <p>Antes de qualquer ferramenta, é preciso nomear a dor.</p>
+      </div>
+      <div class="manifesto-grid">
+        <div class="manifesto-card panel chamfer">
+          <span class="num">01</span>
+          <h3>Silos de Dados e Desconexão Estratégica</h3>
+          <p>Sua empresa opera com ERP e planilhas isoladas, mas os sistemas não são integrados. O fator mais crítico é a ausência de uma conexão determinística entre os dados operacionais e a gestão estratégica.</p>
+        </div>
+        <div class="manifesto-card panel chamfer">
+          <span class="num">02</span>
+          <h3>Gestão Reativa e Falta de Previsibilidade</h3>
+          <p>As equipes de manutenção e planejamento atuam de forma reativa, limitando-se a apagar incêndios cotidianos.</p>
+        </div>
+        <div class="manifesto-card panel chamfer">
+          <span class="num">03</span>
+          <h3>Sobrecarga Operacional e Ineficiência de Processos</h3>
+          <p>Perdas invisíveis causadas pela distribuição de tarefas sem o respaldo de matrizes de risco e modelagens preditivas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- SOBRE O ESPECIALISTA (Seção E) ---------- -->
+  <section class="bio" id="sobre">
+    <div class="wrap bio-grid">
+      <div class="bio-copy">
+        <span class="eyebrow">Sobre o especialista</span>
+        <h2 style="font-size: clamp(22px, 2.6vw, 30px); margin: 14px 0 20px; line-height: 1.25;">Engenharia de produção aplicada, traduzida em código.</h2>
+        <p>Engenheiro de Produção com especializações em Gestão Industrial e expertise no desenvolvimento de soluções tecnológicas client-side e serverless-edge. Minha atuação foca na tomada de decisão assertiva, na geração de resultados e na melhoria contínua. Uno metodologias de governança, confiabilidade e processos à capacidade de mapear, arquitetar e codificar ecossistemas de alta performance, traduzidos em aplicações de Gestão Integrada.</p>
+        <p>Após um período dedicado à docência, redirecionei essa bagagem técnica e gerencial para onde ela gera impacto direto: a operação industrial. Utilizando agentes autônomos, engenharia de prompt avançada, automações e fluxos de trabalho orquestrados, desenvolvi <strong>5 aplicações completas de gestão industrial</strong> — cada uma projetada para sanar uma dor real do chão de fábrica.</p>
+        <p>O resultado são soluções que integram as regras de negócio, operam com dados em tempo real e funcionam como ferramentas determinísticas. Elas mitigam gargalos operacionais e viabilizam uma tomada de decisão ágil, fundamentada estritamente em parâmetros técnicos.</p>
+        <p>É a exata disciplina de um <strong>Product Owner (PO) Técnico</strong>: traduzir a linguagem da operação para a semântica do código, eliminando em definitivo o gap de comunicação entre quem vivencia o problema e quem desenvolve a solução.</p>
+      </div>
+      <div class="bio-framework panel chamfer">
+        <h3 class="sub">Framework aplicado em cada app</h3>
+        <ol>
+          <li><strong>Mapeamento da dor:</strong> identificação do gargalo real de gestão na operação.</li>
+          <li><strong>Modelagem de negócio:</strong> estruturação de métricas, regras e cálculos que geram valor para o tomador de decisão.</li>
+          <li><strong>Engenharia de dados:</strong> construção da arquitetura e dos motores de cálculo determinísticos.</li>
+          <li><strong>UX/UI Design:</strong> desenho da experiência e interface do usuário com foco no ambiente fabril.</li>
+          <li><strong>Homologação:</strong> validação prática com dados reais de produção.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- BADGES DE AUTORIDADE (Seção K) ---------- -->
+  <section class="badges">
+    <div class="wrap badges-row">
+      <span class="badge-pill">Bundle Size: Ultra-Lightweight</span>
+      <span class="badge-pill">Performance Score: 100/100 Lighthouse</span>
+      <span class="badge-pill">Zero Server Latency (Edge/Client-Side)</span>
+      <span class="badge-pill">Type-Safe Architecture (TypeScript/TanStack)</span>
+    </div>
+  </section>
+
+  <!-- ---------- APP 2: PCM-EAM/CMMS (vídeo à direita) ---------- -->
+  <section class="app-section">
+    <div class="wrap">
+      <div class="app-card reverse">
+        <div class="app-media">
+          <div class="player chamfer" data-player-id="pcm">
+            <img class="thumb" src="assets/thumbs/pcm-eam-cmms.png" alt="Thumbnail do vídeo de demonstração do app PCM-EAM/CMMS" />
+            <button class="play-btn" data-youtube-id="eg8LZWpK6wo" data-player-id="pcm" aria-label="Reproduzir vídeo de demonstração do PCM-EAM/CMMS">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="yt-target" id="yt-target-pcm"></div>
+            <div class="yt-mask-top">PCM-EAM/CMMS &mdash; DEMONSTRAÇÃO</div>
+            <div class="yt-cover">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span class="yt-cover-text">Carregando vídeo…</span>
+            </div>
+            <div class="custom-controls" data-controls-for="pcm">
+              <button class="cc-btn" data-action="toggle-play" aria-label="Play/Pause">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+              <input type="range" class="cc-seek" data-seek-for="pcm" min="0" max="1000" value="0" aria-label="Progresso do vídeo" />
+              <div class="cc-quality">
+                <button class="cc-q-btn active" data-quality="hd720">720p</button>
+                <button class="cc-q-btn" data-quality="medium">360p</button>
+              </div>
+              <button class="cc-btn" data-action="fullscreen" aria-label="Tela cheia">
+                <svg class="icon-expand" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zM5 10h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <svg class="icon-compress" viewBox="0 0 24 24" style="display:none"><path d="M9 9H4v2h7V4H9v5zm6-5h-2v7h7V9h-5V4zm0 16h2v-7h-2v7zM4 15h5v5h2v-7H4v2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="player-label"><span>PCM-EAM-CMMS_DEMO.MP4</span><span class="rec">REC</span></div>
+        </div>
+        <div class="app-copy">
+          <span class="app-kicker">Digital Twin e engenharia de confiabilidade</span>
+          <h2>Ecossistema PCM-EAM/CMMS Cockpit — Indústria 4.0</h2>
+          <p>Manutenção 4.0 através do PCM EAM/CMMS Cockpit: uma plataforma de altíssima densidade analítica projetada para centralizar a operação, antecipar falhas e otimizar o ciclo de vida de ativos industriais complexos. Codificado para rodar 100% client-side e serverless-edge, processando dados sensíveis em milissegundos e persistindo tudo de forma redundante via IndexedDB e localStorage.</p>
+          <h3 class="sub">Motores de cálculo</h3>
+          <ul>
+            <li><strong>Operação:</strong> OEE, Disponibilidade, Desempenho, Qualidade, Backlog e Downtime em gauges de Classe Mundial, com Plano Mestre de 52 semanas em heatmap.</li>
+            <li><strong>Confiabilidade Avançada:</strong> Distribuição de Weibull por ativo via median ranks, com cálculo de RUL no Digital Twin.</li>
+            <li><strong>Engenharia de Análise de Falhas:</strong> FMEA/FMECA com RPN automatizado, RCA por Ishikawa (6M) e 5 Porquês.</li>
+            <li><strong>Gestão Financeira &amp; LCC:</strong> Custo de Ciclo de Vida cruzado com Spare Parts MRO, energia e métricas ESG.</li>
+            <li><strong>Simulação Estatística:</strong> Monte Carlo em tempo real com referências de risco P50 e P90.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- APP 3: BPM-CBOK (vídeo à esquerda) ---------- -->
+  <section class="app-section">
+    <div class="wrap">
+      <div class="app-card">
+        <div class="app-media">
+          <div class="player chamfer" data-player-id="bpm">
+            <img class="thumb" src="assets/thumbs/bpm-cbok.png" alt="Thumbnail do vídeo de demonstração do app BPM-CBOK" />
+            <button class="play-btn" data-youtube-id="t0pCwSgc8g8" data-player-id="bpm" aria-label="Reproduzir vídeo de demonstração do BPM-CBOK">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="yt-target" id="yt-target-bpm"></div>
+            <div class="yt-mask-top">BPM-CBOK &mdash; DEMONSTRAÇÃO</div>
+            <div class="yt-cover">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span class="yt-cover-text">Carregando vídeo…</span>
+            </div>
+            <div class="custom-controls" data-controls-for="bpm">
+              <button class="cc-btn" data-action="toggle-play" aria-label="Play/Pause">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+              <input type="range" class="cc-seek" data-seek-for="bpm" min="0" max="1000" value="0" aria-label="Progresso do vídeo" />
+              <div class="cc-quality">
+                <button class="cc-q-btn active" data-quality="hd720">720p</button>
+                <button class="cc-q-btn" data-quality="medium">360p</button>
+              </div>
+              <button class="cc-btn" data-action="fullscreen" aria-label="Tela cheia">
+                <svg class="icon-expand" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zM5 10h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <svg class="icon-compress" viewBox="0 0 24 24" style="display:none"><path d="M9 9H4v2h7V4H9v5zm6-5h-2v7h7V9h-5V4zm0 16h2v-7h-2v7zM4 15h5v5h2v-7H4v2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="player-label"><span>BPM-CBOK_DEMO.MP4</span><span class="rec">REC</span></div>
+        </div>
+        <div class="app-copy">
+          <span class="app-kicker">Orquestração de processos e gêmeo digital</span>
+          <h2>BPM-CBOK — Indústria 4.0</h2>
+          <p>Fusão entre o gerenciamento de processos de negócios (BPM-CBOK) e a engenharia de operações da Indústria 4.0: um Console de Comando (Cyber-Command HUD) projetado para diagnosticar, auditar e otimizar processos de manufatura com altíssima densidade analítica, rodando sob o paradigma serverless-edge e client-side.</p>
+          <h3 class="sub">Analytics avançado do CBOK</h3>
+          <ul>
+            <li><strong>Maturidade Operacional (Escala CMMI):</strong> avalia em milissegundos o nível de maturidade dos processos de 0 a 5.</li>
+            <li><strong>Engenharia Lean (VA vs. NVA):</strong> separa Tempo Agregador de Valor do Tempo Desperdiçado para expor gargalos de redesenho.</li>
+            <li><strong>Governança de Riscos (RPFMEA Scatter):</strong> correlação baseada nas normas AIAG/VDA de PFMEA.</li>
+            <li><strong>Mineração de Processos:</strong> identifica anomalias e variantes de fluxo fora do padrão BPMN 2.0.</li>
+            <li><strong>Gêmeo Digital:</strong> aplicação prática da Lei de Little (Teoria das Filas) para prever gargalos iminentes.</li>
+            <li><strong>Alinhamento Estratégico:</strong> Radar Multi-KPI cruzando performance com metas do BSC e ISO 9001 / IATF 16949.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- APP 4: LEAN SIX SIGMA + LEAN MANUFACTURING (vídeo à direita) ---------- -->
+  <section class="app-section">
+    <div class="wrap">
+      <div class="app-card reverse">
+        <div class="app-media">
+          <div class="player chamfer" data-player-id="lss">
+            <img class="thumb" src="assets/thumbs/lean-six-sigma.png" alt="Thumbnail do vídeo de demonstração do app Lean Six Sigma + Lean Manufacturing" />
+            <button class="play-btn" data-youtube-id="Y3_qkbfIqsU" data-player-id="lss" aria-label="Reproduzir vídeo de demonstração do Lean Six Sigma">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="yt-target" id="yt-target-lss"></div>
+            <div class="yt-mask-top">Lean Six Sigma &mdash; DEMONSTRAÇÃO</div>
+            <div class="yt-cover">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span class="yt-cover-text">Carregando vídeo…</span>
+            </div>
+            <div class="custom-controls" data-controls-for="lss">
+              <button class="cc-btn" data-action="toggle-play" aria-label="Play/Pause">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+              <input type="range" class="cc-seek" data-seek-for="lss" min="0" max="1000" value="0" aria-label="Progresso do vídeo" />
+              <div class="cc-quality">
+                <button class="cc-q-btn active" data-quality="hd720">720p</button>
+                <button class="cc-q-btn" data-quality="medium">360p</button>
+              </div>
+              <button class="cc-btn" data-action="fullscreen" aria-label="Tela cheia">
+                <svg class="icon-expand" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zM5 10h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <svg class="icon-compress" viewBox="0 0 24 24" style="display:none"><path d="M9 9H4v2h7V4H9v5zm6-5h-2v7h7V9h-5V4zm0 16h2v-7h-2v7zM4 15h5v5h2v-7H4v2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="player-label"><span>LEAN-SIX-SIGMA_DEMO.MP4</span><span class="rec">REC</span></div>
+        </div>
+        <div class="app-copy">
+          <span class="app-kicker">Eficiência operacional e variabilidade zero</span>
+          <h2>Lean Six Sigma + Lean Manufacturing — Indústria 4.0</h2>
+          <p>A fusão entre a filosofia Lean, o controle estatístico de processo e a inteligência industrial preditiva. Uma plataforma analítica proprietária que integra, de forma nativa, as metodologias de mitigação de perdas do Lean Manufacturing ao rigor estatístico do Six Sigma, com IA embarcada para otimizar os fluxos mais complexos da indústria.</p>
+          <h3 class="sub">Integração com resultantes críticas</h3>
+          <ul>
+            <li><strong>VSM Dashboard:</strong> mapeamento automatizado do fluxo de valor, takt time e os 7 desperdícios clássicos.</li>
+            <li><strong>Control Charts (CEP):</strong> as 8 Regras de Nelson em tempo real, com Cp/Cpk e DPMO.</li>
+            <li><strong>Gestão DMAIC &amp; Funil de Savings:</strong> RTY por fase e impacto financeiro contra a meta.</li>
+            <li><strong>Kanban Digital &amp; Limites WIP:</strong> dimensionamento eletrônico dinâmico de cartões.</li>
+            <li><strong>Waste Hunter &amp; Lean Green (ESG):</strong> caça de perdas ocultas e OEE-Energy.</li>
+            <li><strong>Auditoria 5S &amp; Poka-Yoke Digital:</strong> diagramas radar por setor com sugestão de dispositivos à prova de erros.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- APP 5: SST-SGG (vídeo à esquerda) ---------- -->
+  <section class="app-section">
+    <div class="wrap">
+      <div class="app-card">
+        <div class="app-media">
+          <div class="player chamfer" data-player-id="sst">
+            <img class="thumb" src="assets/thumbs/sst-sgg.png" alt="Thumbnail do vídeo de demonstração do app SST-SGG" />
+            <button class="play-btn" data-youtube-id="0EFukngH7oM" data-player-id="sst" aria-label="Reproduzir vídeo de demonstração do SST-SGG">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="yt-target" id="yt-target-sst"></div>
+            <div class="yt-mask-top">SST-SGG &mdash; DEMONSTRAÇÃO</div>
+            <div class="yt-cover">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span class="yt-cover-text">Carregando vídeo…</span>
+            </div>
+            <div class="custom-controls" data-controls-for="sst">
+              <button class="cc-btn" data-action="toggle-play" aria-label="Play/Pause">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+              <input type="range" class="cc-seek" data-seek-for="sst" min="0" max="1000" value="0" aria-label="Progresso do vídeo" />
+              <div class="cc-quality">
+                <button class="cc-q-btn active" data-quality="hd720">720p</button>
+                <button class="cc-q-btn" data-quality="medium">360p</button>
+              </div>
+              <button class="cc-btn" data-action="fullscreen" aria-label="Tela cheia">
+                <svg class="icon-expand" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zM5 10h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <svg class="icon-compress" viewBox="0 0 24 24" style="display:none"><path d="M9 9H4v2h7V4H9v5zm6-5h-2v7h7V9h-5V4zm0 16h2v-7h-2v7zM4 15h5v5h2v-7H4v2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="player-label"><span>SST-SGG_DEMO.MP4</span><span class="rec">REC</span></div>
+        </div>
+        <div class="app-copy">
+          <span class="app-kicker">Governança de risco e conformidade</span>
+          <h2>SST-SGG Industrial — Indústria 4.0</h2>
+          <p>Segurança e Saúde no Trabalho (SST-SGG) integrada à Cultura 4.0: um ecossistema com altíssima densidade analítica desenvolvido para centralizar, auditar e antecipar riscos ocupacionais em plantas de manufatura e operações de engenharia pesada, rodando 100% client-side e serverless-edge.</p>
+          <h3 class="sub">Módulos de missão crítica</h3>
+          <ul>
+            <li><strong>GRO / PGR &amp; Matriz 5×5 (NR-01):</strong> Mapeamento de riscos ocupacionais fundamentado na ISO 31000 e MIL-STD-882.</li>
+            <li><strong>PCMSO &amp; Saúde Ocupacional (NR-07):</strong> Métricas de aptidão, exames e restrições.</li>
+            <li><strong>Auditoria Normativa &amp; Semáforo de Vencimento:</strong> Cruzamento de NRs vigentes com evidências de campo e prazos legais.</li>
+            <li><strong>Inteligência Preditiva de Risco:</strong> Score de Risco por área combinando frequência, severidade e recorrência.</li>
+            <li><strong>IoT, Ergonomia &amp; NRs Técnicas:</strong> Mapas de Safety Score, probabilidades, anomalias e ICS médio, com módulos preparados para  receber bases de dados de sensores industriais, análises ergonômicas e vistorias de Permissões de Trabalho(PT).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- MÉTRICAS DAS FERRAMENTAS (Seção G) ---------- -->
+  <section class="metrics" id="metricas">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Métricas das ferramentas</span>
+        <h2>35 indicadores matemáticos, um ecossistema de inteligência prescritiva</h2>
+        <p>Cenário-modelo para uma planta industrial de médio/grande porte, faturamento de referência de R$ 100 milhões/ano.</p>
+      </div>
+
+      <div class="metrics-tabs">
+        <button class="metrics-tab active" data-target="m-pmp">PMP-PMO</button>
+        <button class="metrics-tab" data-target="m-pcm">PCM-EAM/CMMS</button>
+        <button class="metrics-tab" data-target="m-bpm">BPM-CBOK</button>
+        <button class="metrics-tab" data-target="m-lss">Lean Six Sigma</button>
+        <button class="metrics-tab" data-target="m-sst">SST-SGG</button>
+      </div>
+
+      <div class="metrics-intro panel chamfer">
+        <span class="sim-badge">Simulação Técnica/Matemática</span>
+        <p>Os valores abaixo compõem um cenário-modelo com dados simulados (planta de R$ 100M/ano), usado para demonstrar a lógica de cálculo dos motores analíticos de cada APP. Obs.: Não são dados nem resultados auditados de um cliente específico.</p>
+      </div>
+
+      <!-- PMP-PMO -->
+      <div class="metrics-panel active" id="m-pmp">
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th>Indicador</th><th>Situação anterior</th><th>Com o app</th><th>Ganho estimado</th></tr></thead>
+            <tbody>
+              <tr><td class="indicator">MTTR</td><td>4,5 horas</td><td>3,51 horas</td><td class="gain">-22% em tempo de máquina parada</td></tr>
+              <tr><td class="indicator">OEE</td><td>72%</td><td>78,5%</td><td class="gain">+6,5 p.p. de capacidade real</td></tr>
+              <tr><td class="indicator">CAPEX / EVM (desvios)</td><td>R$ 3.000.000</td><td>R$ 2.580.000</td><td class="gain">R$ 420.000 injetados na margem</td></tr>
+              <tr><td class="indicator">Prazos (Monte Carlo)</td><td>60 dias de atraso médio</td><td>39 dias de desvio</td><td class="gain">-35% em multas de atraso</td></tr>
+              <tr><td class="indicator">Mão de obra (horas extras)</td><td>R$ 500.000</td><td>R$ 410.000</td><td class="gain">R$ 90.000 economizados</td></tr>
+              <tr><td class="indicator">COQ (qualidade)</td><td>R$ 1.200.000</td><td>R$ 900.000</td><td class="gain">R$ 300.000 de redução de desperdício</td></tr>
+              <tr><td class="indicator">Risco ativo (ISO 31000)</td><td>R$ 2.000.000 exposição</td><td>R$ 1.200.000</td><td class="gain">R$ 800.000 em riscos evitados</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="metrics-conclusion">Somando apenas orçamento, mão de obra e qualidade (itens 3, 5 e 6), a plataforma gera um <strong>retorno direto de R$ 810.000/ano</strong> — sem contar o ganho indireto do aumento de OEE.</div>
+      </div>
+
+      <!-- PCM-EAM/CMMS -->
+      <div class="metrics-panel" id="m-pcm">
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th>Indicador</th><th>Sem o Cockpit</th><th>Com o Cockpit</th><th>Retorno estimado</th></tr></thead>
+            <tbody>
+              <tr><td class="indicator">MTBF</td><td>200 h operacionais</td><td>264 h operacionais</td><td class="gain">+32% de tempo de máquina rodando</td></tr>
+              <tr><td class="indicator">Backlog</td><td>4 semanas acumuladas</td><td>3,4 semanas</td><td class="gain">-15% de sobrecarga operacional</td></tr>
+              <tr><td class="indicator">LCC (ativos)</td><td>R$ 5.000.000</td><td>R$ 4.400.000</td><td class="gain">R$ 600.000 poupados</td></tr>
+              <tr><td class="indicator">Estoque MRO</td><td>R$ 2.000.000 imobilizados</td><td>R$ 1.600.000</td><td class="gain">R$ 400.000 liberados no caixa</td></tr>
+              <tr><td class="indicator">Reincidência de quebras</td><td>12/ano por ativo</td><td>6/ano por ativo</td><td class="gain">-45% de retrabalho</td></tr>
+              <tr><td class="indicator">RPN (FMEA)</td><td>Modos de falha críticos</td><td>Ações mitigadoras automáticas</td><td class="gain">-28% de severidade de risco</td></tr>
+              <tr><td class="indicator">Energia (ESG)</td><td>R$ 3.000.000/ano</td><td>R$ 2.880.000/ano</td><td class="gain">R$ 120.000 economizados</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="metrics-conclusion">Focando em estoque, energia e decisões de LCC (itens 3, 4 e 7), o módulo adiciona <strong>mais R$ 1.120.000</strong> de retorno ou liquidez direta.</div>
+      </div>
+
+      <!-- BPM-CBOK -->
+      <div class="metrics-panel" id="m-bpm">
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th>Indicador de processo</th><th>Sem o HUD</th><th>Com o Cyber-HUD</th><th>Ganho estimado</th></tr></thead>
+            <tbody>
+              <tr><td class="indicator">Lead Time</td><td>12 dias de ciclo</td><td>9 dias de ciclo</td><td class="gain">-25% de tempo de resposta</td></tr>
+              <tr><td class="indicator">Desperdício (NVA)</td><td>2,0h por turno</td><td>1,4h por turno</td><td class="gain">-30% de tempo desperdiçado</td></tr>
+              <tr><td class="indicator">Maturidade CMMI</td><td>Processos caóticos (&lt;2)</td><td>Processos definidos (&gt;3)</td><td class="gain">+15% de eficiência interna</td></tr>
+              <tr><td class="indicator">Variantes de fluxo</td><td>15 caminhos incorretos</td><td>9 caminhos otimizados</td><td class="gain">-40% de erros de conformidade</td></tr>
+              <tr><td class="indicator">Custos RPFMEA</td><td>R$ 1.500.000 em riscos</td><td>R$ 1.230.000</td><td class="gain">R$ 270.000 poupados</td></tr>
+              <tr><td class="indicator">Throughput</td><td>1.000 un/turno</td><td>1.080 un/turno</td><td class="gain">+8% de vazão fabril</td></tr>
+              <tr><td class="indicator">Preparação para auditoria ISO</td><td>120 horas</td><td>48 horas</td><td class="gain">-60% de esforço</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="metrics-conclusion">A otimização Lean e o bloqueio de falhas via RPFMEA (itens 2 e 5) removem desperdícios ocultos que <strong>facilmente ultrapassam R$ 450.000/ano</strong> em economia direta.</div>
+      </div>
+
+      <!-- LEAN SIX SIGMA -->
+      <div class="metrics-panel" id="m-lss">
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th>Indicador estatístico</th><th>Sem o app</th><th>Com o módulo</th><th>Ganho estimado</th></tr></thead>
+            <tbody>
+              <tr><td class="indicator">DPMO</td><td>22.000</td><td>12.100</td><td class="gain">-45% de refugo bruto</td></tr>
+              <tr><td class="indicator">Takt Time</td><td>40 min/ciclo</td><td>34 min/ciclo</td><td class="gain">+15% de velocidade na linha</td></tr>
+              <tr><td class="indicator">RTY</td><td>88%</td><td>93%</td><td class="gain">R$ 5M fluindo sem retrabalho</td></tr>
+              <tr><td class="indicator">Estoque WIP</td><td>R$ 1.500.000</td><td>R$ 1.170.000</td><td class="gain">R$ 330.000 injetados no caixa</td></tr>
+              <tr><td class="indicator">Funil de Savings</td><td>Identificação lenta</td><td>Caça automatizada por IA</td><td class="gain">R$ 250.000 capturados mais rápido</td></tr>
+              <tr><td class="indicator">OEE-Energy (ESG)</td><td>Desperdício oculto</td><td>Energia atrelada à produção</td><td class="gain">R$ 360.000 economizados</td></tr>
+              <tr><td class="indicator">Falhas humanas</td><td>Erros recorrentes</td><td>Poka-Yoke preditivo</td><td class="gain">-65% de custos de assistência</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="metrics-conclusion">Somando estoque parado, energia e funil de savings (itens 4, 5 e 6), o módulo entrega <strong>R$ 940.000</strong> em retorno financeiro palpável.</div>
+      </div>
+
+      <!-- SST-SGG -->
+      <div class="metrics-panel" id="m-sst">
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th>Indicador ocupacional</th><th>Cenário tradicional</th><th>Com o app SST 4.0</th><th>Retorno estimado</th></tr></thead>
+            <tbody>
+              <tr><td class="indicator">Acidentes (TF)</td><td>12/ano</td><td>6/ano</td><td class="gain">-50% de acidentes</td></tr>
+              <tr><td class="indicator">Dias perdidos (TG)</td><td>300 dias</td><td>180 dias</td><td class="gain">+120 dias produtivos</td></tr>
+              <tr><td class="indicator">FAP / RAT</td><td>R$ 540.000/ano</td><td>R$ 337.500/ano</td><td class="gain">R$ 202.500 economizados em imposto</td></tr>
+              <tr><td class="indicator">Multas trabalhistas</td><td>Exposição de R$ 80 mil</td><td>Alertas e semáforo ativo</td><td class="gain">R$ 80.000 em risco eliminado</td></tr>
+              <tr><td class="indicator">Liberação de PT</td><td>90 minutos</td><td>40 minutos</td><td class="gain">-55% no tempo de espera</td></tr>
+              <tr><td class="indicator">Passivos jurídicos</td><td>R$ 1.000.000 em risco</td><td>Histórico blindado e local</td><td class="gain">R$ 300.000 poupados</td></tr>
+              <tr><td class="indicator">Sinistralidade (saúde)</td><td>R$ 1.500.000/ano</td><td>Acompanhamento ativo</td><td class="gain">R$ 180.000 salvos no reajuste</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="metrics-conclusion">Somando imposto (FAP), prevenção de processos e sinistralidade (itens 3, 6 e 7), este módulo devolve <strong>R$ 682.500/ano</strong> em dinheiro direto para a diretoria.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- FAQ (Seção H) ---------- -->
+  <section class="faq" id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Perguntas frequentes</span>
+        <h2>F.A.Q - 5 APPs:<br>
+        50 perguntas técnicas!</h2>
+        <p>Clique nos módulos correspondentes, para expandir 10 perguntas técnicas de cada APP. </p>
+      </div>
+
+      <div class="faq-modules">
+
+        <div class="faq-module open">
+          <button class="faq-module-toggle"><span>APP 1 — PMP-PMO Cockpit</span><span class="chev">+</span></button>
+          <div class="faq-module-body">
+            <details class="faq-item" open><summary>Como o Motor CPM Nativo garante mais precisão que Excel ou MS Project?</summary><p>R: O motor executa Forward/Backward Pass diretamente no app em milissegundos, blindando a malha lógica e acusando folgas negativas ou desvios no Caminho Crítico instantaneamente.</p></details>
+            <details class="faq-item"><summary>O Monte Carlo de 5.000 iterações não exige processamento em nuvem?</summary><p>R: Não — o algoritmo roda client-side, usando o poder do próprio dispositivo, eliminando taxas de processamento em servidor e entregando curvas P50/P80/P90 em tempo recorde.</p></details>
+            <details class="faq-item"><summary>Minha equipe já usa ERP. O que agrega o EVM ERP?</summary><p>R: ERPs registram custo real histórico. O app cruza Planejado, Entregue e Custo Real em tempo real, projetando EAC e TCPI antes do financeiro fechar o mês.</p></details>
+            <details class="faq-item"><summary>Como o Nivelamento Heurístico reduz custos com equipes?</summary><p>R: Cruza histogramas de carga contra o teto operacional, identifica superalocação e sugere janelas de deslocamento usando folga livre, reduzindo horas extras não planejadas.</p></details>
+            <details class="faq-item"><summary>O app funciona sem internet num canteiro isolado?</summary><p>R: Sim — a lógica é determinística client-side e persiste dados localmente, sem depender de conexão.</p></details>
+            <details class="faq-item"><summary>Como a Matriz de Riscos 5×5 se conecta aos custos do projeto?</summary><p>R: Cruza probabilidade × impacto com valoração financeira, mostrando exatamente quais valores estão em risco em cada quadrante.</p></details>
+            <details class="faq-item"><summary>Como o Módulo Paradas 24h ajuda em contratos de terceiros durante um Shutdown?</summary><p>R: Monitora Downtime por hora/turno e correlaciona atrasos com equipes específicas, dando insumos para cobrar performance de fornecedores.</p></details>
+            <details class="faq-item"><summary>O que é o quadrante "Prescritivo" do Motor Heurístico Local?</summary><p>R: Enquadra projetos em Consistente, Otimizável, Crítico ou Perigoso — não só aponta o erro, dita a ação corretiva.</p></details>
+            <details class="faq-item"><summary>Dá para auditar mudanças de escopo que alteraram a baseline?</summary><p>R: Sim, o controle de baseline vs. real rastreia e armazena o histórico de modificações de WBS para auditorias PMBOK/PMI.</p></details>
+            <details class="faq-item"><summary>Como o app calcula o Custo da Qualidade (COQ)?</summary><p>R: Usa Feigenbaum e Juran para classificar investimentos em Prevenção/Avaliação contra prejuízos de Falhas Internas/Externas.</p></details>
+          </div>
+        </div>
+
+        <div class="faq-module">
+          <button class="faq-module-toggle"><span>APP 2 — PCM-EAM/CMMS Cockpit</span><span class="chev">+</span></button>
+          <div class="faq-module-body">
+            <details class="faq-item"><summary>O que significa rodar Weibull via Median Ranks no app?</summary><p>R: Engenharia de Confiabilidade de classe mundial sem planilhas — o sistema diagnostica mortalidade precoce, quebra aleatória ou desgaste, mudando a estratégia de preventiva para preditiva.</p></details>
+            <details class="faq-item"><summary>Como o Digital Twin calcula o RUL?</summary><p>R: Alimentado por histórico de ordens de serviço e/ou telemetria, o motor estatístico roda cenários locais e projeta a vida útil restante do ativo.</p></details>
+            <details class="faq-item"><summary>FMEA/FMECA costuma ser burocrático. Como o app resolve isso?</summary><p>R: Calcula o RPN dinamicamente conforme os modos de falha são inseridos e conecta o diagnóstico direto aos módulos de RCA.</p></details>
+            <details class="faq-item"><summary>Como Ishikawa e 5 Porquês evitam quebras repetidas?</summary><p>R: Digitaliza as estruturas em interface fluida, mapeando e tratando a causa raiz física, humana ou latente dos Bad Actors.</p></details>
+            <details class="faq-item"><summary>Como o LCC ajuda a justificar a compra de novas máquinas?</summary><p>R: Cruza custo de aquisição, manutenção e energia ao longo do tempo, provando graficamente se compensa manter ou substituir o ativo.</p></details>
+            <details class="faq-item"><summary>Como reduzir o capital parado em Spare Parts?</summary><p>R: Cruza a matriz de peças com a criticidade real dos ativos, identificando excesso em itens de baixa criticidade e risco em itens críticos.</p></details>
+            <details class="faq-item"><summary>O que são os KPIs em Gauges Semicirculares?</summary><p>R: OEE, Disponibilidade, Desempenho, Qualidade, Backlog e Downtime sob parâmetros de Classe Mundial, para leitura instantânea.</p></details>
+            <details class="faq-item"><summary>Como funciona o Plano Mestre de 52 Semanas em Heatmap?</summary><p>R: Calendário dinâmico que distribui a carga preditiva/preventiva ao longo do ano, destacando semanas de sobrecarga antes do backlog explodir.</p></details>
+            <details class="faq-item"><summary>Os dados trafegam em servidores de terceiros?</summary><p>R: Não — 100% client-side/serverless-edge, persistidos via IndexedDB e localStorage.</p></details>
+            <details class="faq-item"><summary>Como o módulo se conecta a métricas ESG?</summary><p>R: Correlaciona eficiência dos ativos com consumo de energia, sinalizando desvios para a manutenção atuar em prol da sustentabilidade.</p></details>
+          </div>
+        </div>
+
+        <div class="faq-module">
+          <button class="faq-module-toggle"><span>APP 3 — BPM-CBOK Cyber-HUD</span><span class="chev">+</span></button>
+          <div class="faq-module-body">
+            <details class="faq-item"><summary>Qual a vantagem de avaliar Maturidade CMMI em milissegundos?</summary><p>R: Permite intervenção imediata da gestão, isolando fluxos caóticos (CMMI &lt;2) que geram desperdício oculto e priorizando padronização.</p></details>
+            <details class="faq-item"><summary>Como o motor Lean calcula VA vs. NVA?</summary><p>R: Analisa o fluxo de forma matricial, empilhando tempos de processamento real contra tempos de espera, transporte e burocracia.</p></details>
+            <details class="faq-item"><summary>Como funciona o RPFMEA Scatter (AIAG/VDA)?</summary><p>R: Plota risco de falha de processo contra tempo desperdiçado e custo por atividade, isolando etapas que precisam de redesenho urgente.</p></details>
+            <details class="faq-item"><summary>Como o Process Mining encontra gargalos sem entrevistas?</summary><p>R: Via Log Mining, lê dados de sistemas internos e desenha a linha do tempo real dos processos, detectando desvios e variantes fora do BPMN 2.0.</p></details>
+            <details class="faq-item"><summary>Como a Lei de Little prevê o comportamento da fábrica?</summary><p>R: Correlaciona WIP, tempo de espera na fila e throughput em gráficos de bolha, avisando com antecedência onde a planta vai travar.</p></details>
+            <details class="faq-item"><summary>Como o Radar Multi-KPI ajuda a gestão executiva?</summary><p>R: Unifica performance atual contra metas do BSC e auditorias normativas, evitando a leitura de dezenas de relatórios isolados.</p></details>
+            <details class="faq-item"><summary>Preciso de treinamento complexo em BPMN 2.0 para usar o console?</summary><p>R: Não — o motor interno segue a governança da OMG, mas a interface entrega dashboards simples, ocultando a complexidade da modelagem.</p></details>
+            <details class="faq-item"><summary>Como a hiperautomação do Cyber-Command HUD se traduz na prática?</summary><p>R: Elimina tarefas repetitivas de baixo valor, permitindo maior throughput com menor esforço da equipe atual.</p></details>
+            <details class="faq-item"><summary>Como os dados de processos são persistidos localmente?</summary><p>R: Normalização de datasets massivos direto na máquina do usuário, com alta velocidade e sem consumir banda de internet.</p></details>
+            <details class="faq-item"><summary>Como o app ajuda em auditorias ISO 9001?</summary><p>R: Atua como repositório dinâmico e auditável, reduzindo o tempo de preparação ao entregar evidências direto dos logs do sistema.</p></details>
+          </div>
+        </div>
+
+        <div class="faq-module">
+          <button class="faq-module-toggle"><span>APP 4 — Lean Six Sigma + Lean Manufacturing</span><span class="chev">+</span></button>
+          <div class="faq-module-body">
+            <details class="faq-item"><summary>O que o VSM Dashboard faz que um consultor Lean levaria semanas para entregar?</summary><p>R: Automatiza o Mapeamento do Fluxo de Valor, calculando takt time, tempos de ciclo e varrendo os 7 desperdícios clássicos continuamente.</p></details>
+            <details class="faq-item"><summary>Como as 8 Regras de Nelson ajudam a zerar a variabilidade?</summary><p>R: Rodam em tempo real nas variáveis críticas, disparando alertas preditivos antes que a linha gere peças com defeito.</p></details>
+            <details class="faq-item"><summary>O que representam Cp, Cpk e DPMO na capacidade da fábrica?</summary><p>R: Indicam se o processo trabalha dentro das tolerâncias do cliente e traduzem o Nível Sigma global em probabilidade real de desperdício.</p></details>
+            <details class="faq-item"><summary>O que é o "Funil de Savings" do módulo DMAIC?</summary><p>R: Acompanha projetos de melhoria do Define ao Control, calculando o Rendimento Acumulado (RTY) por fase e o impacto financeiro real.</p></details>
+            <details class="faq-item"><summary>Como o Kanban Digital dimensiona cartões automaticamente?</summary><p>R: Monitora demanda, tempo de ciclo e taxas de bloqueio, recalculando o número ideal de cartões e limites de WIP.</p></details>
+            <details class="faq-item"><summary>O que o "Waste Hunter" com IA monitora?</summary><p>R: Varre estruturas tabulares procurando anomalias físicas/financeiras de transporte, espera e retrabalho, gerando um ranking de perdas.</p></details>
+            <details class="faq-item"><summary>Como o indicador "OEE-Energy" impacta o faturamento?</summary><p>R: Separa energia útil de energia desperdiçada em ociosidade/setups, revelando oportunidades diretas de corte na conta de luz.</p></details>
+            <details class="faq-item"><summary>Como funcionam os diagramas radar do módulo de Auditoria 5S?</summary><p>R: Transformam vistorias de 5S em indicadores visuais quantitativos, comparáveis entre turnos ou células industriais.</p></details>
+            <details class="faq-item"><summary>Como funciona o "Poka-Yoke Digital"?</summary><p>R: Com base nos desvios detectados no CEP, sugere mecanismos de travamento lógico ou físico para impedir a reincidência do erro humano.</p></details>
+            <details class="faq-item"><summary>O processamento consome dados em nuvem?</summary><p>R: Não — cálculos de Cp/Cpk, RTY e limites Kanban ocorrem localmente no navegador, sem custo extra de infraestrutura.</p></details>
+          </div>
+        </div>
+
+        <div class="faq-module">
+          <button class="faq-module-toggle"><span>APP 5 — SST-SGG Industrial</span><span class="chev">+</span></button>
+          <div class="faq-module-body">
+            <details class="faq-item"><summary>Como o GRO/PGR difere de planilhas de segurança em papel?</summary><p>R: Mantém uma matriz cromática dinâmica integrada ao estado global do app — um desvio registrado recalcula o risco da área em tempo real.</p></details>
+            <details class="faq-item"><summary>Como o app ajuda a mitigar o FAP?</summary><p>R: A Inteligência Preditiva calcula o Score de Risco por área; menos sinistros reduzem o multiplicador do FAP junto ao governo.</p></details>
+            <details class="faq-item"><summary>Como funciona o módulo PCMSO (NR-07)?</summary><p>R: Gerencia Métricas de aptidão, exames, restrições e monitora indicadores, automatizando as resultantes.</p></details>
+            <details class="faq-item"><summary>O que é o "Semáforo de Vencimento" da Auditoria Normativa?</summary><p>R: Controla prazos legais de NRs técnicas (NR-10, NR-12, NR-35) com alertas visuais, evitando autuações em fiscalizações surpresa.</p></details>
+            <details class="faq-item"><summary>Como o algoritmo heurístico prevê acidentes?</summary><p>R: Analisa microdesvios comportamentais, condições inseguras e quase-acidentes, cruzando frequência, severidade e recorrência.</p></details>
+            <details class="faq-item"><summary>Como o app recebe dados de IoT e Ergonomia (NR-17)?</summary><p>R: Lê bases tabulares locais de sensores e laudos ergonômicos, gerando diagnósticos de postura, vibração, calor ou ruído.</p></details>
+            <details class="faq-item"><summary>Como o módulo mapeia e categoriza riscos?</summary><p>R: Tabula os dados e gera gráficos com indicadores que sinalizam quais postos precisam de ajuste prioritário.</p></details>
+            <details class="faq-item"><summary>O que acontece se uma anomalia crítica for registrada?</summary><p>R: O painel emite um alerta preventivo visual para a gestão avaliar a necessidade de intervenção antes da operação do ativo.</p></details>
+            <details class="faq-item"><summary>Como o controle de EPIs se conecta à saúde ocupacional?</summary><p>R: Cruza os riscos do PGR de cada função com a ficha de EPI eletrônica, notificando exames vencidos ou EPIs fora da validade.</p></details>
+            <details class="faq-item"><summary>Como o app organiza as métricas de conformidade?</summary><p>R: Organiza e audita as métricas operacionais, sinalizando à gestão o status de conformidade em SST.</p></details>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- AUTOMAÇÕES DE CONTATO (Seção I) ---------- -->
+  <section class="contact" id="contato">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Vamos conversar</span>
+        <h2>Escolha o canal que faz sentido para o seu momento</h2>
+        <p>Cada botão já leva sua mensagem pronta — você só confirma o envio.</p>
+      </div>
+      <div class="contact-grid">
+
+        <div class="contact-card panel chamfer">
+          <span class="tag">Indústrias</span>
+          <p>Quer um profissional que também constrói as ferramentas que sua operação precisa? Vamos conversar sobre como posso atuar na gestão da sua planta.</p>
+          <a class="btn" target="_blank" rel="noopener" href="https://wa.me/5571992153048?text=Ol%C3%A1%2C%20Eduardo!%20Quero%20conversar%20sobre%20oportunidades%20de%20Gest%C3%A3o%20industrial.">Quero conversar sobre Gestão</a>
+        </div>
+
+        <div class="contact-card panel chamfer">
+          <span class="tag">Software / ERP</span>
+          <p>Procurando um Product Owner para traduzir as dores da indústria e transformá-las em apps?</p>
+          <a class="btn" target="_blank" rel="noopener" href="https://wa.me/5571992153048?text=Ol%C3%A1%2C%20Eduardo!%20Quero%20falar%20sobre%20oportunidades%20como%20Product%2FDev%20Manager%20para%20ERP%2FSoftware.">Falar sobre Product/Dev Manager</a>
+        </div>
+
+        <div class="contact-card panel chamfer">
+          <span class="tag">Consultoria</span>
+          <p>Precisa de um consultor que racionaliza as métricas e entrega soluções? Vamos desenhar juntos o sistema certo para o seu desafio.</p>
+          <a class="btn" target="_blank" rel="noopener" href="https://wa.me/5571992153048?text=Ol%C3%A1%2C%20Eduardo!%20Gostaria%20de%20uma%20consultoria.">Gostaria de uma consultoria</a>
+        </div>
+
+        <div class="contact-card panel chamfer">
+          <span class="tag">E-mail corporativo</span>
+          <p>Prefere formalizar o contato diretamente por e-mail ou possui restrições de comunicação na sua operação? Vamos conversar por aqui.</p>
+          <a class="btn" href="#" data-open-chat>Iniciar contato por e-mail</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ---------- WIDGET FLUTUANTE (Card 4) ---------- -->
+<button id="chat-fab" aria-label="Abrir chat de contato">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<div id="chat-widget">
+  <div class="chat-head">
+    <span>CONTATO — EDUARDO</span>
+    <button id="chat-close" aria-label="Fechar chat">✕</button>
+  </div>
+  <div class="chat-body" id="chat-body">
+    <div class="chat-msg">Olá! Tudo bem? Obrigado pelo contato por aqui.</div>
+    <div class="chat-msg">Já vi que você prefere o contato por e-mail. Para eu entender melhor o seu cenário e preparar uma proposta assertiva para o seu desafio, você poderia me passar esses detalhes rápidos?</div>
+    <form class="chat-form" id="chat-form">
+      <input type="text" name="nome" placeholder="Nome" required />
+      <input type="text" name="empresa" placeholder="Empresa" required />
+      <input type="email" name="email" placeholder="E-mail corporativo" required />
+      <textarea name="motivo" placeholder="Motivo curto do contato" required></textarea>
+      <button type="submit" class="btn btn-solid">Enviar informações</button>
+    </form>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
