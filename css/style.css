@@ -504,6 +504,22 @@ body.unlocked #gate {
 .player.is-playing .thumb,
 .player.is-playing .play-btn { display: none; }
 
+/* escudo transparente sobre o iframe — impede qualquer clique OU hover
+   direto no vídeo do YouTube. É isso que evita os ícones nativos que
+   o YouTube revela sozinho ao passar o mouse por cima do vídeo pausado
+   (seta de "voltar 10s", relógio etc.) — eles nem chegam a aparecer,
+   porque o iframe nunca recebe o evento de mouse; tudo é capturado por
+   este escudo e redirecionado para o nosso próprio botão de play/pause. */
+.yt-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.player.is-playing .yt-shield { pointer-events: auto; }
+
 /* tarja fixa no topo — SEMPRE visível enquanto o player está ativo,
    tocando ou não, para cobrir fisicamente a área onde o YouTube
    desenha avatar/nome do canal (isso não é supresível via parâmetro) */
@@ -1209,6 +1225,18 @@ table.metrics-table td.gain { color: var(--green); font-weight: 500; }
 }
 
 .chat-form { display: flex; flex-direction: column; gap: 10px; }
+
+/* honeypot anti-spam: campo real no DOM (bots que preenchem tudo
+   cegamente caem nele), mas invisível e inalcançável para humanos —
+   por isso "display:none" não é usado aqui (alguns bots o ignoram) */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  height: 0;
+  width: 0;
+  overflow: hidden;
+}
 
 .chat-form input,
 .chat-form textarea {

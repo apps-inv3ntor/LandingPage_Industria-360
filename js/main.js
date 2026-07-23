@@ -249,6 +249,13 @@
     startProgressLoop(playerId);
   }
 
+  function togglePlayPause(playerId) {
+    const player = YT_PLAYERS[playerId];
+    if (!player || typeof player.getPlayerState !== "function") return;
+    if (player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
+    else player.playVideo();
+  }
+
   document.querySelectorAll(".play-btn[data-youtube-id]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       const wrap = btn.closest(".player");
@@ -261,6 +268,15 @@
       const build = function () { buildPlayer(playerId, videoId); };
       if (ytApiReady) build();
       else ytPendingBuilds.push(build);
+    });
+  });
+
+  // escudo transparente sobre o vídeo: qualquer clique nele alterna
+  // play/pause através da API — o iframe do YouTube em si nunca recebe
+  // o clique (nem o hover), então nenhum ícone nativo dele aparece.
+  document.querySelectorAll(".yt-shield").forEach(function (shield) {
+    shield.addEventListener("click", function () {
+      togglePlayPause(shield.getAttribute("data-shield-for"));
     });
   });
 
@@ -290,10 +306,7 @@
     const playBtn = bar.querySelector('[data-action="toggle-play"]');
     if (playBtn) {
       playBtn.addEventListener("click", function () {
-        const player = YT_PLAYERS[playerId];
-        if (!player || typeof player.getPlayerState !== "function") return;
-        if (player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
-        else player.playVideo();
+        togglePlayPause(playerId);
       });
     }
 
@@ -396,14 +409,38 @@
   const chatClose = document.getElementById("chat-close");
   const chatForm = document.getElementById("chat-form");
   const chatBody = document.getElementById("chat-body");
+  const chatIntro = document.getElementById("chat-intro");
+  const chatDynamic = document.getElementById("chat-dynamic");
+
+  let chatAutoCloseTimer = null;
+
+  function resetChatWidget() {
+    if (chatAutoCloseTimer) {
+      clearTimeout(chatAutoCloseTimer);
+      chatAutoCloseTimer = null;
+    }
+    if (chatIntro) chatIntro.style.display = "";
+    if (chatDynamic) chatDynamic.innerHTML = "";
+    if (chatForm) {
+      chatForm.reset();
+      chatForm.style.display = "";
+      const submitBtn = chatForm.querySelector("button[type=submit]");
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enviar informações";
+      }
+    }
+  }
 
   function openChat() {
     chatWidget.classList.add("open");
     chatFab.classList.add("hidden");
   }
+
   function closeChat() {
     chatWidget.classList.remove("open");
     chatFab.classList.remove("hidden");
+    resetChatWidget(); // ao fechar, a próxima abertura já vem limpa
   }
 
   if (chatFab) chatFab.addEventListener("click", openChat);
@@ -420,8 +457,22 @@
     chatForm.addEventListener("submit", async function (e) {
       e.preventDefault();
 
+      // honeypot: se esse campo (invisível para humanos) vier preenchido,
+      // é bot — finge sucesso e não gasta 1 crédito sequer do Make.com
+      if (chatForm.website && chatForm.website.value.trim() !== "") {
+        if (chatIntro) chatIntro.style.display = "none";
+        chatForm.style.display = "none";
+        chatDynamic.innerHTML = "";
+        const fakeSuccess = document.createElement("div");
+        fakeSuccess.className = "chat-msg";
+        fakeSuccess.textContent =
+          "Obrigado pelas informações! Assim que eu receber o seu contato aqui na minha caixa de entrada, analisarei o seu cenário e retornarei o mais breve possível para conversarmos. Tenha um excelente dia de trabalho!";
+        chatDynamic.appendChild(fakeSuccess);
+        chatAutoCloseTimer = setTimeout(closeChat, 4000);
+        return;
+      }
+
       const submitBtn = chatForm.querySelector("button[type=submit]");
-      const originalLabel = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = "TRANSMITINDO DADOS DE AUTORIZAÇÃO...";
 
@@ -443,22 +494,31 @@
           });
         }
 
+        // sucesso: mostra só a mensagem final (esconde as de boas-vindas
+        // e o formulário) — nada de empilhar mensagem em cima de mensagem
+        if (chatIntro) chatIntro.style.display = "none";
         chatForm.style.display = "none";
+        chatDynamic.innerHTML = "";
         const success = document.createElement("div");
         success.className = "chat-msg";
         success.textContent =
           "Obrigado pelas informações! Assim que eu receber o seu contato aqui na minha caixa de entrada, analisarei o seu cenário e retornarei o mais breve possível para conversarmos. Tenha um excelente dia de trabalho!";
-        chatBody.appendChild(success);
+        chatDynamic.appendChild(success);
         chatBody.scrollTop = chatBody.scrollHeight;
+
+        // fecha sozinho depois de alguns segundos, já deixando tudo
+        // resetado para a próxima vez que o ícone for clicado
+        chatAutoCloseTimer = setTimeout(closeChat, 4000);
       } catch (err) {
         submitBtn.disabled = false;
-        submitBtn.textContent = originalLabel;
+        submitBtn.textContent = "Enviar informações";
+        chatDynamic.innerHTML = "";
         const errorMsg = document.createElement("div");
         errorMsg.className = "chat-msg";
         errorMsg.style.color = "var(--orange)";
         errorMsg.textContent =
           "[ FALHA NA TRANSMISSÃO. VERIFIQUE SUA CONEXÃO E TENTE NOVAMENTE. ]";
-        chatBody.appendChild(errorMsg);
+        chatDynamic.appendChild(errorMsg);
         chatBody.scrollTop = chatBody.scrollHeight;
       }
     });

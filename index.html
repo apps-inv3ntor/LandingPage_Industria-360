@@ -83,6 +83,7 @@
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-pmp"></div>
+            <div class="yt-shield" data-shield-for="pmp"></div>
             <div class="yt-mask-top">PMP-PMO &mdash; DEMONSTRAÇÃO</div>
             <div class="yt-cover">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -208,6 +209,7 @@
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-pcm"></div>
+            <div class="yt-shield" data-shield-for="pcm"></div>
             <div class="yt-mask-top">PCM-EAM/CMMS &mdash; DEMONSTRAÇÃO</div>
             <div class="yt-cover">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -259,6 +261,7 @@
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-bpm"></div>
+            <div class="yt-shield" data-shield-for="bpm"></div>
             <div class="yt-mask-top">BPM-CBOK &mdash; DEMONSTRAÇÃO</div>
             <div class="yt-cover">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -311,6 +314,7 @@
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-lss"></div>
+            <div class="yt-shield" data-shield-for="lss"></div>
             <div class="yt-mask-top">Lean Six Sigma &mdash; DEMONSTRAÇÃO</div>
             <div class="yt-cover">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -363,6 +367,7 @@
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-sst"></div>
+            <div class="yt-shield" data-shield-for="sst"></div>
             <div class="yt-mask-top">SST-SGG &mdash; DEMONSTRAÇÃO</div>
             <div class="yt-cover">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -669,9 +674,16 @@
     <button id="chat-close" aria-label="Fechar chat">✕</button>
   </div>
   <div class="chat-body" id="chat-body">
-    <div class="chat-msg">Olá! Tudo bem? Obrigado pelo contato por aqui.</div>
-    <div class="chat-msg">Já vi que você prefere o contato por e-mail. Para eu entender melhor o seu cenário e preparar uma proposta assertiva para o seu desafio, você poderia me passar esses detalhes rápidos?</div>
+    <div id="chat-intro">
+      <div class="chat-msg">Olá! Tudo bem? Obrigado pelo contato por aqui.</div>
+      <div class="chat-msg">Já vi que você prefere o contato por e-mail. Para eu entender melhor o seu cenário e preparar uma proposta assertiva para o seu desafio, você poderia me passar esses detalhes rápidos?</div>
+    </div>
+    <div id="chat-dynamic"></div>
     <form class="chat-form" id="chat-form">
+      <div class="hp-field" aria-hidden="true">
+        <label for="chat-website">Website</label>
+        <input type="text" id="chat-website" name="website" tabindex="-1" autocomplete="off" />
+      </div>
       <input type="text" name="nome" placeholder="Nome" required />
       <input type="text" name="empresa" placeholder="Empresa" required />
       <input type="email" name="email" placeholder="E-mail corporativo" required />
