@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Indústria 360 — Dashboard Privado</title>
+<style>
+/* ============================================================
+   Mesma identidade tática da landing page — copiada aqui porque
+   este arquivo é standalone (roda local, não faz parte do site
+   publicado no GitHub Pages).
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg-canvas: #090e14;
+  --bg-panel: rgba(16, 23, 33, 0.7);
+  --border-hairline: rgba(0, 216, 255, 0.15);
+  --border-hairline-strong: rgba(0, 216, 255, 0.35);
+  --cyan: #00d8ff;
+  --orange: #ff4e00;
+  --green: #00ffcc;
+  --text-primary: #f4f8fb;
+  --text-secondary: #7c8aa0;
+  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 4px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-canvas);
+  background-image:
+    linear-gradient(rgba(0, 216, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 216, 255, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  line-height: 1.6;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 60px; }
+
+header.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+header.top h1 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+header.top h1 span { color: var(--cyan); }
+
+.clock { color: var(--cyan); font-size: 12px; }
+
+.source-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 78, 0, 0.4);
+  color: var(--orange);
+}
+.source-badge.live {
+  border-color: rgba(0, 255, 204, 0.4);
+  color: var(--green);
+}
+
+h2.section-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin: 40px 0 16px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius);
+}
+
+.kpi-card { padding: 20px; }
+.kpi-card .label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.kpi-card .value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--text-primary);
+}
+.kpi-card .delta { font-size: 11px; color: var(--green); margin-top: 6px; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+}
+
+.bar-list { padding: 20px; }
+.bar-row { margin-bottom: 14px; }
+.bar-row:last-child { margin-bottom: 0; }
+.bar-row .bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.bar-row .bar-label strong { color: var(--text-primary); font-weight: 500; }
+.bar-track {
+  height: 8px;
+  background: rgba(0, 216, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  border-radius: 4px;
+}
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table.data-table th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  padding: 10px 14px;
+  background: rgba(0, 216, 255, 0.06);
+  border-bottom: 1px solid var(--border-hairline-strong);
+}
+table.data-table td {
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-hairline);
+}
+table.data-table tr:last-child td { border-bottom: none; }
+table.data-table td.strong { color: var(--text-primary); }
+
+.region-list { padding: 20px; }
+.region-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-hairline);
+  font-size: 12.5px;
+}
+.region-row:last-child { border-bottom: none; }
+.region-row .count {
+  font-family: var(--font-display);
+  color: var(--cyan);
+  font-size: 13px;
+}
+
+.footnote {
+  margin-top: 40px;
+  padding: 18px 20px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  border-left: 2px solid var(--orange);
+  background: rgba(255, 78, 0, 0.04);
+}
+.footnote code {
+  color: var(--cyan);
+  background: rgba(0, 216, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+@media (max-width: 860px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+}
+
+.export-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-hairline-strong);
+  background: rgba(0, 216, 255, 0.1);
+  color: var(--cyan);
+  cursor: pointer;
+}
+.export-btn:hover { background: rgba(0, 216, 255, 0.22); }
+
+/* ------------------------------------------------------------
+   Impressão / "Salvar como PDF" — o navegador já sabe paginar;
+   aqui só forçamos um layout claro (economiza tinta, fica mais
+   legível impresso) e escondemos o que não faz sentido no papel.
+   ------------------------------------------------------------ */
+@media print {
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #16202c !important;
+  }
+  .export-btn, .clock, #source-badge { display: none !important; }
+  header.top { border-bottom-color: #ccc; }
+  header.top h1, header.top h1 span { color: #16202c !important; }
+  .panel {
+    background: #f7fafb !important;
+    border-color: #d7e0e6 !important;
+    break-inside: avoid;
+  }
+  .kpi-card .value, table.data-table td.strong { color: #16202c !important; }
+  .kpi-card .label, .bar-row .bar-label, table.data-table td,
+  .region-row, .footnote { color: #445 !important; }
+  table.data-table th { color: #0089b3 !important; background: #eaf6fa !important; }
+  h2.section-title { color: #0089b3 !important; }
+  .bar-track { background: #e4eef2 !important; }
+  .region-row .count { color: #0089b3 !important; }
+  .footnote { border-left-color: #c94100; background: #fff6f0 !important; }
+  .two-col { grid-template-columns: 1fr 1fr; }
+}
+
+.gate-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-canvas);
+}
+body.unlocked .gate-screen { display: none; }
+body:not(.unlocked) .dash-content { display: none; }
+
+.gate-box {
+  width: 100%;
+  max-width: 360px;
+  padding: 32px 28px;
+  background: rgba(16, 23, 33, 0.85);
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius);
+}
+.gate-box h1 {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  margin: 0 0 18px;
+  text-align: center;
+}
+.gate-box input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.gate-box button {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-hairline-strong);
+  background: linear-gradient(135deg, var(--cyan), #00a2ff);
+  color: #061019;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.gate-box .gate-error {
+  color: var(--orange);
+  font-size: 11px;
+  text-align: center;
+  min-height: 16px;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="gate-screen">
+  <div class="gate-box">
+    <h1>INDÚSTRIA 360 — ACESSO RESTRITO</h1>
+    <input type="password" id="gate-pass" placeholder="Senha de administrador" />
+    <button id="gate-btn">Entrar</button>
+    <div class="gate-error" id="gate-err"></div>
+  </div>
+</div>
+
+<div class="dash-content">
+<header class="top">
+  <h1>INDÚSTRIA<span>.</span>360 &nbsp;·&nbsp; Dashboard Privado</h1>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span id="source-badge" class="source-badge">dados de exemplo</span>
+    <span class="clock" id="clock"></span>
+    <button class="export-btn" id="export-btn">Exportar PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2 class="section-title">Visão geral</h2>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <h2 class="section-title">Seções mais buscadas <span id="sections-tag" class="source-badge" style="margin-left:6px; font-size:9px;">exemplo</span> &amp; atividade por região</h2>
+  <div class="two-col">
+    <div class="panel bar-list" id="sections-panel"></div>
+    <div class="panel region-list" id="region-panel"></div>
+  </div>
+
+  <h2 class="section-title">Leads recentes (Card 4 — E-mail) <span id="leads-tag" class="source-badge" style="margin-left:10px; font-size:9px;">exemplo</span></h2>
+  <div class="panel" style="overflow-x:auto;">
+    <table class="data-table" id="leads-table">
+      <thead>
+        <tr><th>Nome</th><th>Empresa</th><th>E-mail</th><th>Motivo</th><th>Origem</th><th>Data</th></tr>
+      </thead>
+      <tbody id="leads-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="footnote">
+    Este painel roda localmente e não é publicado no GitHub Pages. Enquanto o cenário do
+    Make.com / a planilha do Google Sheets não estiverem prontos, ele exibe <strong>dados de
+    exemplo</strong> (claramente marcados acima). Para conectar dados reais, edite a constante
+    <code>DATA_SOURCE_URL</code> no início do <code>&lt;script&gt;</code> deste arquivo, apontando
+    para uma URL que retorne JSON no mesmo formato do objeto <code>SAMPLE_DATA</code> definido
+    logo abaixo dela — ou publique a planilha como CSV (Arquivo → Compartilhar → Publicar na
+    Web) e o dashboard já sabe ler esse formato também, como já faz com os leads.
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ============================================================
+   GATE DE SENHA — protege o dashboard para poder ficar hospedado
+   no GitHub Pages com segurança. Não guardamos a senha em texto
+   puro no código-fonte: comparamos o hash SHA-256 dela. Troque
+   ADMIN_PASSWORD_HASH gerando o hash da sua senha (instruções no
+   final deste arquivo, no comentário da função checkPassword).
+   ============================================================ */
+// SENHA TEMPORÁRIA DE FÁBRICA: "trocar123" — TROQUE ASSIM QUE PUBLICAR:
+// 1) Abra este dashboard.html no navegador, aperte F12 (Console).
+// 2) Rode: await sha256Hex("SuaNovaSenhaAqui")
+// 3) Copie o resultado (64 caracteres) e cole abaixo, substituindo o valor atual.
+const ADMIN_PASSWORD_HASH = "b0857a7c7d3178e44ca0d8836786ae18ee806f7625e589b98c5bad307813eaf6";
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+}
+
+const SESSION_KEY = "i360_dash_ok";
+
+async function checkPassword() {
+  const input = document.getElementById("gate-pass").value;
+  const hash = await sha256Hex(input);
+  if (hash === ADMIN_PASSWORD_HASH) {
+    document.body.classList.add("unlocked");
+    sessionStorage.setItem(SESSION_KEY, "1");
+  } else {
+    document.getElementById("gate-err").textContent = "Senha incorreta.";
+  }
+}
+
+document.getElementById("gate-btn").addEventListener("click", checkPassword);
+document.getElementById("gate-pass").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") checkPassword();
+});
+if (sessionStorage.getItem(SESSION_KEY) === "1") {
+  document.body.classList.add("unlocked");
+}
+
+/* ============================================================
+   Fonte de dados real: planilha do Google Sheets publicada como
+   CSV (Arquivo → Compartilhar → Publicar na Web → .csv).
+   Colunas esperadas (na mesma ordem que o Make.com grava, vindas
+   do formulário do Card 4): nome, empresa, email, motivo, origem, data
+   ============================================================ */
+const DATA_SOURCE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSYLQmVKobBstbNO_ed2bg1yZDrlgCw-v-jDNIHJL8opH-q5GThelnl7HsxW1Yz_yYtipuqftMhOq4i/pub?gid=0&single=true&output=csv";
+
+// Planilha "Eventos" (telemetria), publicada como CSV do mesmo jeito que
+// a de leads. Fica vazia até você me passar o link — enquanto isso, os
+// KPIs de acesso/retenção/seções seguem com os dados de exemplo.
+const TELEMETRY_SOURCE_URL = "";
+
+const SAMPLE_DATA = {
+  kpis: {
+    total_acessos: 27,
+    tempo_medio_retencao: "4m 12s",
+    total_leads: 9,
+    taxa_conversao: "33%",
+  },
+  secoes_mais_buscadas: [
+    { nome: "Métricas / ROI", pct: 92 },
+    { nome: "FAQ", pct: 78 },
+    { nome: "PCM-EAM/CMMS", pct: 71 },
+    { nome: "Bio do especialista", pct: 64 },
+    { nome: "PMP-PMO", pct: 58 },
+  ],
+  leads_por_dia: [
+    { nome: "18/07/2026", contagem: 3 },
+    { nome: "17/07/2026", contagem: 2 },
+    { nome: "15/07/2026", contagem: 1 },
+  ],
+  leads: [
+    { nome: "Eduardo (exemplo)", empresa: "Metalúrgica Vale Forte", email: "contato@valeforte.com", motivo: "Gostaria de agendar uma reunião", origem: "card4_chat_widget", data: "18/07/2026 09:12" },
+    { nome: "Ana (exemplo)", empresa: "Grupo Industrial Nordeste", email: "ana@gin.com.br", motivo: "Quero entender o app de manutenção", origem: "card4_chat_widget", data: "17/07/2026 14:30" },
+  ],
+};
+
+/* ------------------------------------------------------------
+   Parser de CSV simples (lida com campos entre aspas contendo
+   vírgulas/quebras de linha, como o Google Sheets exporta) —
+   suficiente para o volume de uma planilha de leads, sem precisar
+   de nenhuma biblioteca externa.
+   ------------------------------------------------------------ */
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (c === '"' && next === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ",") { row.push(field); field = ""; }
+      else if (c === "\r") { /* ignora */ }
+      else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+      else { field += c; }
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+
+  if (rows.length === 0) return [];
+  const headers = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+  return rows.slice(1)
+    .filter(function (r) { return r.some(function (cell) { return cell.trim() !== ""; }); })
+    .map(function (r) {
+      const obj = {};
+      headers.forEach(function (h, i) { obj[h] = (r[i] || "").trim(); });
+      return obj;
+    });
+}
+
+function calcularMetricasDeEventos(eventos) {
+  const sessoes = {};
+  eventos.forEach(function (ev) {
+    if (!ev.session_id) return;
+    sessoes[ev.session_id] = sessoes[ev.session_id] || { pais: ev.pais, regiao: ev.regiao, cidade: ev.cidade };
+  });
+  const totalAcessos = Object.keys(sessoes).length;
+
+  const duracoes = eventos
+    .filter(function (ev) { return ev.evento === "session_duration" && ev.tempo_s; })
+    .map(function (ev) { return parseFloat(ev.tempo_s); })
+    .filter(function (n) { return !isNaN(n); });
+  const mediaSeg = duracoes.length ? duracoes.reduce(function (a, b) { return a + b; }, 0) / duracoes.length : 0;
+  const tempoMedio = mediaSeg ? Math.floor(mediaSeg / 60) + "m " + Math.round(mediaSeg % 60) + "s" : "—";
+
+  const contagemPorDetalhe = {};
+  eventos.forEach(function (ev) {
+    if (["video_play", "faq_module_open", "metrics_tab_view", "contact_click"].indexOf(ev.evento) === -1) return;
+    const chave = ev.evento + ": " + ev.detalhe;
+    contagemPorDetalhe[chave] = (contagemPorDetalhe[chave] || 0) + 1;
+  });
+  const maxContagem = Math.max.apply(null, Object.values(contagemPorDetalhe).concat([1]));
+  const secoes = Object.keys(contagemPorDetalhe)
+    .map(function (k) { return { nome: k, pct: Math.round((contagemPorDetalhe[k] / maxContagem) * 100) }; })
+    .sort(function (a, b) { return b.pct - a.pct; })
+    .slice(0, 8);
+
+  const contagemRegiao = {};
+  Object.keys(sessoes).forEach(function (sid) {
+    const s = sessoes[sid];
+    const chave = (s.regiao || "Desconhecida") + (s.cidade ? " — " + s.cidade : "");
+    contagemRegiao[chave] = (contagemRegiao[chave] || 0) + 1;
+  });
+  const regioes = Object.keys(contagemRegiao)
+    .map(function (k) { return { nome: k, contagem: contagemRegiao[k] }; })
+    .sort(function (a, b) { return b.contagem - a.contagem; })
+    .slice(0, 8);
+
+  return { totalAcessos: totalAcessos, tempoMedio: tempoMedio, secoes: secoes, regioes: regioes };
+}
+
+function formatarDataBR(valor) {
+  const d = new Date(valor);
+  if (isNaN(d.getTime())) return valor; // não parece uma data válida, mostra como veio
+  return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function agruparPorDia(leads) {
+  const contagem = {};
+  leads.forEach(function (l) {
+    const d = new Date(l.data);
+    const dia = isNaN(d.getTime()) ? ((l.data || "").split(" ")[0] || "(sem data)") : d.toLocaleDateString("pt-BR");
+    contagem[dia] = (contagem[dia] || 0) + 1;
+  });
+  return Object.keys(contagem)
+    .map(function (dia) { return { nome: dia, contagem: contagem[dia] }; })
+    .sort(function (a, b) { return b.contagem - a.contagem; })
+    .slice(0, 8);
+}
+
+function renderClock() {
+  const el = document.getElementById("clock");
+  const now = new Date();
+  el.textContent = now.toLocaleDateString("pt-BR") + "  " + now.toLocaleTimeString("pt-BR");
+}
+setInterval(renderClock, 1000);
+renderClock();
+
+function renderKpis(kpis, leadsAreLive, telemetryIsLive) {
+  const grid = document.getElementById("kpi-grid");
+  const items = [
+    { label: "Total de acessos" + (telemetryIsLive ? "" : " (exemplo)"), value: kpis.total_acessos },
+    { label: "Tempo médio de retenção" + (telemetryIsLive ? "" : " (exemplo)"), value: kpis.tempo_medio_retencao },
+    { label: "Total de leads" + (leadsAreLive ? "" : " (exemplo)"), value: kpis.total_leads },
+    { label: "Taxa de conversão (exemplo)", value: kpis.taxa_conversao },
+  ];
+  grid.innerHTML = items.map(function (it) {
+    return '<div class="panel kpi-card"><div class="label">' + it.label +
+           '</div><div class="value">' + it.value + '</div></div>';
+  }).join("");
+}
+
+function renderSections(lista) {
+  const panel = document.getElementById("sections-panel");
+  panel.innerHTML = lista.map(function (s) {
+    return (
+      '<div class="bar-row">' +
+        '<div class="bar-label"><strong>' + s.nome + '</strong><span>' + s.pct + '%</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + s.pct + '%"></div></div>' +
+      '</div>'
+    );
+  }).join("");
+}
+
+function renderRegions(lista, vazio) {
+  const panel = document.getElementById("region-panel");
+  if (!lista.length) {
+    panel.innerHTML = '<div class="region-row"><span>' + vazio + '</span></div>';
+    return;
+  }
+  panel.innerHTML = lista.map(function (r) {
+    return '<div class="region-row"><span>' + esc(r.nome) + '</span><span class="count">' + r.contagem + '</span></div>';
+  }).join("");
+}
+
+function esc(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : str;
+  return div.innerHTML;
+}
+
+function renderLeads(lista) {
+  const tbody = document.getElementById("leads-tbody");
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6">Nenhum lead registrado ainda.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(function (l) {
+    return (
+      '<tr>' +
+        '<td class="strong">' + esc(l.nome) + '</td>' +
+        '<td>' + esc(l.empresa) + '</td>' +
+        '<td>' + esc(l.email) + '</td>' +
+        '<td>' + esc(l.motivo) + '</td>' +
+        '<td>' + esc(l.origem) + '</td>' +
+        '<td>' + esc(formatarDataBR(l.data)) + '</td>' +
+      '</tr>'
+    );
+  }).join("");
+}
+
+function renderAll(kpis, secoes, regioesOuLeadsPorDia, regioesVazioMsg, leads, leadsAreLive, telemetryIsLive) {
+  renderKpis(kpis, leadsAreLive, telemetryIsLive);
+  renderSections(secoes);
+  renderRegions(regioesOuLeadsPorDia, regioesVazioMsg);
+  renderLeads(leads);
+
+  const leadsTag = document.getElementById("leads-tag");
+  if (leadsTag) {
+    leadsTag.textContent = leadsAreLive ? "dados ao vivo" : "exemplo";
+    leadsTag.classList.toggle("live", leadsAreLive);
+  }
+
+  const badge = document.getElementById("source-badge");
+  if (leadsAreLive || telemetryIsLive) {
+    const partes = [];
+    if (leadsAreLive) partes.push("leads");
+    if (telemetryIsLive) partes.push("acessos");
+    badge.textContent = partes.join(" + ") + ": dados ao vivo";
+    badge.classList.add("live");
+  } else {
+    badge.textContent = "dados de exemplo";
+    badge.classList.remove("live");
+  }
+}
+
+async function buscarCsv(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return parseCsv(await res.text());
+}
+
+async function init() {
+  let leads = null;
+  let eventos = null;
+
+  if (DATA_SOURCE_URL) {
+    try { leads = await buscarCsv(DATA_SOURCE_URL); }
+    catch (err) { console.error("Falha ao buscar leads, usando exemplo:", err); }
+  }
+  if (TELEMETRY_SOURCE_URL) {
+    try { eventos = await buscarCsv(TELEMETRY_SOURCE_URL); }
+    catch (err) { console.error("Falha ao buscar telemetria, usando exemplo:", err); }
+  }
+
+  const leadsAreLive = leads !== null;
+  const telemetryIsLive = eventos !== null;
+
+  const kpis = Object.assign({}, SAMPLE_DATA.kpis);
+  if (leadsAreLive) kpis.total_leads = leads.length;
+
+  let secoes = SAMPLE_DATA.secoes_mais_buscadas;
+  let regioesOuLeadsPorDia = SAMPLE_DATA.leads_por_dia;
+  let regioesVazioMsg = "Nenhum dado ainda";
+
+  if (telemetryIsLive) {
+    const m = calcularMetricasDeEventos(eventos);
+    kpis.total_acessos = m.totalAcessos;
+    kpis.tempo_medio_retencao = m.tempoMedio;
+    secoes = m.secoes.length ? m.secoes : SAMPLE_DATA.secoes_mais_buscadas;
+    regioesOuLeadsPorDia = m.regioes;
+    regioesVazioMsg = "Nenhum acesso registrado ainda";
+  } else if (leadsAreLive) {
+    regioesOuLeadsPorDia = agruparPorDia(leads);
+    regioesVazioMsg = "Nenhum lead registrado ainda";
+  }
+
+  const leadsOrdenados = leadsAreLive ? leads.slice().reverse() : SAMPLE_DATA.leads;
+
+  renderAll(kpis, secoes, regioesOuLeadsPorDia, regioesVazioMsg, leadsOrdenados, leadsAreLive, telemetryIsLive);
+}
+
+init();
+
+document.getElementById("export-btn").addEventListener("click", function () {
+  // Abre o diálogo nativo de impressão do navegador — a opção "Salvar
+  // como PDF" já gera um PDF completo do dashboard (KPIs, gráficos de
+  // barra e tabelas), usando o layout claro definido em @media print
+  // acima. Não depende de nenhuma biblioteca externa.
+  window.print();
+});
+</script>
+</body>
+</html>

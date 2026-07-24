@@ -2,6 +2,101 @@
   "use strict";
 
   /* =================================================================
+     0) TELEMETRIA (opcional, gratuita — Google Apps Script + Sheets)
+     Cole aqui a URL /exec gerada ao implantar o apps_script_telemetria.gs
+     como Web App. Enquanto estiver vazia, nada é enviado (sem erro).
+     ================================================================= */
+
+  const TELEMETRY_URL = ""; // <- cole aqui a URL do seu Web App do Apps Script
+
+  const TELEMETRY_SESSION_KEY = "i360_session_id";
+  const TELEMETRY_GEO_KEY = "i360_geo";
+  let telemetryGeo = null;
+  const pageLoadedAt = Date.now();
+
+  function getSessionId() {
+    let id = sessionStorage.getItem(TELEMETRY_SESSION_KEY);
+    if (!id) {
+      id = "s_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+      sessionStorage.setItem(TELEMETRY_SESSION_KEY, id);
+    }
+    return id;
+  }
+
+  function sendTelemetry(evento, detalhe, tempoS) {
+    if (!TELEMETRY_URL) return;
+    const payload = {
+      session_id: getSessionId(),
+      evento: evento,
+      detalhe: detalhe || "",
+      pais: telemetryGeo ? telemetryGeo.pais : "",
+      regiao: telemetryGeo ? telemetryGeo.regiao : "",
+      cidade: telemetryGeo ? telemetryGeo.cidade : "",
+      tempo_s: tempoS || "",
+    };
+    try {
+      // no-cors: não precisamos ler a resposta, só garantir que o Apps
+      // Script recebeu e gravou a linha — evita ruído de CORS no console
+      fetch(TELEMETRY_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" }, // texto simples evita pre-flight OPTIONS
+        body: JSON.stringify(payload),
+      });
+    } catch (err) { /* telemetria nunca deve quebrar a navegação do visitante */ }
+  }
+
+  function initGeoAndTrackPageView() {
+    if (!TELEMETRY_URL) return;
+
+    const cached = sessionStorage.getItem(TELEMETRY_GEO_KEY);
+    if (cached) {
+      telemetryGeo = JSON.parse(cached);
+      sendTelemetry("page_view", location.pathname);
+      return;
+    }
+
+    fetch("https://ipapi.co/json/")
+      .then(function (r) { return r.json(); })
+      .then(function (geo) {
+        telemetryGeo = {
+          pais: geo.country_name || "",
+          regiao: geo.region || "",
+          cidade: geo.city || "",
+        };
+        sessionStorage.setItem(TELEMETRY_GEO_KEY, JSON.stringify(telemetryGeo));
+      })
+      .catch(function () { telemetryGeo = { pais: "", regiao: "", cidade: "" }; })
+      .finally(function () { sendTelemetry("page_view", location.pathname); });
+  }
+
+  initGeoAndTrackPageView();
+
+  // tempo de permanência — enviado quando o visitante sai/troca de aba,
+  // via sendBeacon (mais confiável que fetch nesse momento específico)
+  function sendDurationBeacon() {
+    if (!TELEMETRY_URL) return;
+    const tempoS = Math.round((Date.now() - pageLoadedAt) / 1000);
+    const payload = {
+      session_id: getSessionId(),
+      evento: "session_duration",
+      detalhe: location.pathname,
+      pais: telemetryGeo ? telemetryGeo.pais : "",
+      regiao: telemetryGeo ? telemetryGeo.regiao : "",
+      cidade: telemetryGeo ? telemetryGeo.cidade : "",
+      tempo_s: tempoS,
+    };
+    try {
+      navigator.sendBeacon(TELEMETRY_URL, new Blob([JSON.stringify(payload)], { type: "text/plain" }));
+    } catch (err) { /* noop */ }
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") sendDurationBeacon();
+  });
+  window.addEventListener("pagehide", sendDurationBeacon);
+
+  /* =================================================================
      1) VALIDAÇÃO DE TOKEN
      Formato: EMP-<base64(DDMMAA invertido)>
      Válido por 15 dias a partir da data codificada no token.
@@ -133,6 +228,7 @@
      ================================================================= */
 
   const YT_PLAYERS = {};
+  const videoPlayTracked = {};
   let ytApiReady = false;
   let ytApiRequested = false;
   const ytPendingBuilds = [];
@@ -237,9 +333,16 @@
         },
         onStateChange: function (e) {
           setPlayPauseIcon(playerId, e.data === YT.PlayerState.PLAYING);
-          if (e.data === YT.PlayerState.PLAYING) setCover(playerId, null);
-          else if (e.data === YT.PlayerState.ENDED) setCover(playerId, "ended");
-          else if (e.data === YT.PlayerState.PAUSED) setCover(playerId, "paused");
+          if (e.data === YT.PlayerState.PLAYING) {
+            setCover(playerId, null);
+            if (!videoPlayTracked[playerId]) {
+              videoPlayTracked[playerId] = true;
+              sendTelemetry("video_play", playerId);
+            }
+          } else if (e.data === YT.PlayerState.ENDED) {
+            setCover(playerId, "ended");
+            sendTelemetry("video_complete", playerId);
+          } else if (e.data === YT.PlayerState.PAUSED) setCover(playerId, "paused");
           else if (e.data === YT.PlayerState.BUFFERING) setCover(playerId, "loading");
         },
       },
@@ -372,6 +475,16 @@
   document.querySelectorAll(".faq-module-toggle").forEach(function (toggle) {
     toggle.addEventListener("click", function () {
       toggle.closest(".faq-module").classList.toggle("open");
+      sendTelemetry("faq_module_open", toggle.textContent.trim());
+    });
+  });
+
+  document.querySelectorAll(".faq-item").forEach(function (item) {
+    item.addEventListener("toggle", function () {
+      if (item.open) {
+        const q = item.querySelector("summary");
+        sendTelemetry("faq_question_open", q ? q.textContent.trim() : "");
+      }
     });
   });
 
@@ -392,6 +505,7 @@
 
       tab.classList.add("active");
       document.getElementById(target).classList.add("active");
+      sendTelemetry("metrics_tab_view", tab.textContent.trim());
     });
   });
 
@@ -446,9 +560,16 @@
   if (chatFab) chatFab.addEventListener("click", openChat);
   if (chatClose) chatClose.addEventListener("click", closeChat);
 
+  document.querySelectorAll('.contact-card a.btn[href*="wa.me"]').forEach(function (link) {
+    link.addEventListener("click", function () {
+      sendTelemetry("contact_click", "whatsapp: " + link.textContent.trim());
+    });
+  });
+
   document.querySelectorAll("[data-open-chat]").forEach(function (el) {
     el.addEventListener("click", function (e) {
       e.preventDefault();
+      sendTelemetry("contact_click", "card4_email_open");
       openChat();
     });
   });
