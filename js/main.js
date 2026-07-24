@@ -7,7 +7,7 @@
      como Web App. Enquanto estiver vazia, nada é enviado (sem erro).
      ================================================================= */
 
-  const TELEMETRY_URL = ""; // <- cole aqui a URL do seu Web App do Apps Script
+  const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbxM1pvmkJeExj4Y_yZw6eFmDVpD1rImOyW44FToHQMm2Zn2898t-THeKw4oIV87YNtb/exec";
 
   const TELEMETRY_SESSION_KEY = "i360_session_id";
   const TELEMETRY_GEO_KEY = "i360_geo";
