@@ -11,7 +11,9 @@
 
   const TELEMETRY_SESSION_KEY = "i360_session_id";
   const TELEMETRY_GEO_KEY = "i360_geo";
+  const TELEMETRY_TOKEN_KEY = "i360_token_used";
   let telemetryGeo = null;
+  let telemetryToken = "";
   const pageLoadedAt = Date.now();
 
   function getSessionId() {
@@ -26,6 +28,7 @@
   function sendTelemetry(evento, detalhe, tempoS) {
     if (!TELEMETRY_URL) return;
     const payload = {
+      token: telemetryToken,
       session_id: getSessionId(),
       evento: evento,
       detalhe: detalhe || "",
@@ -36,10 +39,13 @@
     };
     try {
       // no-cors: não precisamos ler a resposta, só garantir que o Apps
-      // Script recebeu e gravou a linha — evita ruído de CORS no console
+      // Script recebeu e gravou a linha — evita ruído de CORS no console.
+      // keepalive: garante que a requisição tenta terminar mesmo se o
+      // visitante trocar de página logo em seguida.
       fetch(TELEMETRY_URL, {
         method: "POST",
         mode: "no-cors",
+        keepalive: true,
         headers: { "Content-Type": "text/plain" }, // texto simples evita pre-flight OPTIONS
         body: JSON.stringify(payload),
       });
@@ -70,7 +76,9 @@
       .finally(function () { sendTelemetry("page_view", location.pathname); });
   }
 
-  initGeoAndTrackPageView();
+  // NÃO chamamos initGeoAndTrackPageView() aqui embaixo — o rastreamento
+  // só começa depois que o token é validado (ver Seção 1, função unlock),
+  // porque é o token que identifica qual empresa está acessando.
 
   // tempo de permanência — enviado quando o visitante sai/troca de aba,
   // via sendBeacon (mais confiável que fetch nesse momento específico)
@@ -78,6 +86,7 @@
     if (!TELEMETRY_URL) return;
     const tempoS = Math.round((Date.now() - pageLoadedAt) / 1000);
     const payload = {
+      token: telemetryToken,
       session_id: getSessionId(),
       evento: "session_duration",
       detalhe: location.pathname,
@@ -153,9 +162,12 @@
 
   const SESSION_KEY = "i360_session_ok";
 
-  function unlock() {
+  function unlock(token) {
     document.body.classList.add("unlocked");
     sessionStorage.setItem(SESSION_KEY, "1");
+    telemetryToken = token || "";
+    sessionStorage.setItem(TELEMETRY_TOKEN_KEY, telemetryToken);
+    initGeoAndTrackPageView();
   }
 
   function showError(message) {
@@ -173,7 +185,7 @@
 
       if (isTokenValid(value)) {
         gateError.textContent = "";
-        unlock();
+        unlock(value.trim());
       } else {
         showError("[ ERRO: CHAVE INVÁLIDA. VERIFIQUE SEU BRIEFING. ]");
         gateInput.value = "";
@@ -188,6 +200,8 @@
   window.addEventListener("DOMContentLoaded", function () {
     if (sessionStorage.getItem(SESSION_KEY) === "1") {
       document.body.classList.add("unlocked");
+      telemetryToken = sessionStorage.getItem(TELEMETRY_TOKEN_KEY) || "";
+      initGeoAndTrackPageView();
     }
   });
 
@@ -557,7 +571,10 @@
     resetChatWidget(); // ao fechar, a próxima abertura já vem limpa
   }
 
-  if (chatFab) chatFab.addEventListener("click", openChat);
+  if (chatFab) chatFab.addEventListener("click", function () {
+    sendTelemetry("contact_click", "card4_fab_icon");
+    openChat();
+  });
   if (chatClose) chatClose.addEventListener("click", closeChat);
 
   document.querySelectorAll('.contact-card a.btn[href*="wa.me"]').forEach(function (link) {

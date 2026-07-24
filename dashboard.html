@@ -639,23 +639,33 @@ function renderAll(kpis, secoes, regioesOuLeadsPorDia, regioesVazioMsg, leads, l
 }
 
 async function buscarCsv(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return parseCsv(await res.text());
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function () { controller.abort(); }, 8000); // nunca espera mais que 8s
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return parseCsv(await res.text());
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function init() {
-  let leads = null;
-  let eventos = null;
+  // busca leads e telemetria em paralelo (não uma espera a outra) —
+  // e cada uma tem no máximo 8s antes de desistir e cair no exemplo,
+  // pra a tela nunca mais ficar "pendurada" esperando uma resposta lenta
+  const [leadsResult, eventosResult] = await Promise.allSettled([
+    DATA_SOURCE_URL ? buscarCsv(DATA_SOURCE_URL) : Promise.resolve(null),
+    TELEMETRY_SOURCE_URL ? buscarCsv(TELEMETRY_SOURCE_URL) : Promise.resolve(null),
+  ]);
 
-  if (DATA_SOURCE_URL) {
-    try { leads = await buscarCsv(DATA_SOURCE_URL); }
-    catch (err) { console.error("Falha ao buscar leads, usando exemplo:", err); }
-  }
-  if (TELEMETRY_SOURCE_URL) {
-    try { eventos = await buscarCsv(TELEMETRY_SOURCE_URL); }
-    catch (err) { console.error("Falha ao buscar telemetria, usando exemplo:", err); }
-  }
+  let leads = null;
+  if (leadsResult.status === "fulfilled") leads = leadsResult.value;
+  else console.error("Falha ao buscar leads, usando exemplo:", leadsResult.reason);
+
+  let eventos = null;
+  if (eventosResult.status === "fulfilled") eventos = eventosResult.value;
+  else console.error("Falha ao buscar telemetria, usando exemplo:", eventosResult.reason);
 
   const leadsAreLive = leads !== null;
   const telemetryIsLive = eventos !== null;
