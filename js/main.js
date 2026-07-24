@@ -7,7 +7,7 @@
      como Web App. Enquanto estiver vazia, nada é enviado (sem erro).
      ================================================================= */
 
-  const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbxM1pvmkJeExj4Y_yZw6eFmDVpD1rImOyW44FToHQMm2Zn2898t-THeKw4oIV87YNtb/exec";
+  const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbxxfcpQ_QtbzzKhYNDbINB3cfd3PiPqALCIsg1ASMbmUm15o9khYy4rOFxL41eKDwCW/exec";
 
   const TELEMETRY_SESSION_KEY = "i360_session_id";
   const TELEMETRY_GEO_KEY = "i360_geo";
