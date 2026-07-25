@@ -107,10 +107,13 @@
 
   /* =================================================================
      1) VALIDAÇÃO DE TOKEN
-     Formato: EMP-<base64(DDMMAA invertido)>
-     Válido por 15 dias a partir da data codificada no token.
-     Este é o MESMO algoritmo que o gerador privado (Python, offline)
-     usa para criar os tokens — aqui só decodificamos e conferimos.
+     Formato: EMP-<base64(DDMMAAHHMMSS + 3 chars aleatórios, invertido)>
+     Válido por 15 dias a partir da data/hora codificada no token.
+     Este é o MESMO algoritmo que os geradores privados (Python, offline)
+     usam para criar os tokens — aqui só decodificamos e conferimos.
+     O sufixo aleatório existe só para garantir tokens diferentes a cada
+     geração; para validar, usamos apenas os 12 primeiros dígitos
+     (data e hora) e ignoramos o resto.
      ================================================================= */
 
   const TOKEN_VALIDITY_DAYS = 15;
@@ -127,14 +130,18 @@
       return null;
     }
 
-    const ddmmaa = reversed.split("").reverse().join("");
-    if (!/^\d{6}$/.test(ddmmaa)) return null;
+    const original = reversed.split("").reverse().join("");
+    const ddmmaahhmmss = original.slice(0, 12);
+    if (!/^\d{12}$/.test(ddmmaahhmmss)) return null;
 
-    const dd = parseInt(ddmmaa.slice(0, 2), 10);
-    const mm = parseInt(ddmmaa.slice(2, 4), 10);
-    const yy = parseInt(ddmmaa.slice(4, 6), 10);
+    const dd = parseInt(ddmmaahhmmss.slice(0, 2), 10);
+    const mm = parseInt(ddmmaahhmmss.slice(2, 4), 10);
+    const yy = parseInt(ddmmaahhmmss.slice(4, 6), 10);
+    const hh = parseInt(ddmmaahhmmss.slice(6, 8), 10);
+    const mi = parseInt(ddmmaahhmmss.slice(8, 10), 10);
+    const ss = parseInt(ddmmaahhmmss.slice(10, 12), 10);
 
-    const issued = new Date(2000 + yy, mm - 1, dd);
+    const issued = new Date(2000 + yy, mm - 1, dd, hh, mi, ss);
     if (isNaN(issued.getTime())) return null;
 
     return issued;
