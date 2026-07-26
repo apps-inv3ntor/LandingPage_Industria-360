@@ -166,6 +166,8 @@
   const gateInput = document.getElementById("gate-token");
   const gateError = document.getElementById("gate-error");
   const gateCard = document.querySelector(".gate-card");
+  const gateFormWrap = document.getElementById("gate-form-wrap");
+  const gateExpiredPanel = document.getElementById("gate-expired");
 
   const SESSION_KEY = "i360_session_ok";
 
@@ -185,19 +187,38 @@
     gateCard.classList.add("shake");
   }
 
+  function showExpired() {
+    if (gateFormWrap) gateFormWrap.style.display = "none";
+    if (gateExpiredPanel) gateExpiredPanel.style.display = "block";
+  }
+
   if (gateForm) {
     gateForm.addEventListener("submit", function (e) {
       e.preventDefault();
       const value = gateInput.value;
 
-      if (isTokenValid(value)) {
-        gateError.textContent = "";
-        unlock(value.trim());
-      } else {
+      const issued = decodeToken(value);
+      if (!issued) {
         showError("[ ERRO: CHAVE INVÁLIDA. VERIFIQUE SEU BRIEFING. ]");
         gateInput.value = "";
         gateInput.focus();
+        return;
       }
+
+      const diffDays = (new Date() - issued) / (1000 * 60 * 60 * 24);
+      if (diffDays > TOKEN_VALIDITY_DAYS) {
+        showExpired();
+        return;
+      }
+      if (diffDays < -1) {
+        showError("[ ERRO: CHAVE INVÁLIDA. VERIFIQUE SEU BRIEFING. ]");
+        gateInput.value = "";
+        gateInput.focus();
+        return;
+      }
+
+      gateError.textContent = "";
+      unlock(value.trim());
     });
   }
 
@@ -666,6 +687,54 @@
         chatDynamic.appendChild(errorMsg);
         chatBody.scrollTop = chatBody.scrollHeight;
       }
+    });
+  }
+
+  /* =================================================================
+     8) POLIMENTO TÉCNICO — scroll-reveal e navegação ativa
+     ================================================================= */
+
+  // revela seções suavemente conforme entram na tela
+  if ("IntersectionObserver" in window) {
+    const revealObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    document.querySelectorAll(".reveal").forEach(function (el) {
+      revealObserver.observe(el);
+    });
+
+    // destaca o link da seção atual na navegação fixa
+    const navLinks = document.querySelectorAll('.sticky-nav a[data-nav]');
+    if (navLinks.length) {
+      const navObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            const id = entry.target.getAttribute("id");
+            navLinks.forEach(function (link) {
+              link.classList.toggle("active", link.getAttribute("href") === "#" + id);
+            });
+          });
+        },
+        { rootMargin: "-45% 0px -50% 0px" }
+      );
+      ["sobre", "jornada", "apps", "metricas", "faq", "contato"].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) navObserver.observe(el);
+      });
+    }
+  } else {
+    // sem suporte a IntersectionObserver: mostra tudo direto, sem animação
+    document.querySelectorAll(".reveal").forEach(function (el) {
+      el.classList.add("is-visible");
     });
   }
 })();

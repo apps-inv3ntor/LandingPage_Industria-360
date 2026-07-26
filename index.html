@@ -19,23 +19,35 @@
       <div class="id-line">Eduardo — Engenheiro de Produção | Portfólio Técnico</div>
     </div>
 
-    <div class="gate-status">
-      Acesso Restrito. Insira o Token enviado exclusivamente com o
-      briefing do candidato para liberar o console. <strong>— "Token no PDF"</strong>
+    <div id="gate-form-wrap">
+      <div class="gate-status">
+        Acesso Restrito. Insira o Token enviado exclusivamente com o
+        briefing do candidato para liberar o console. <strong>— "Token no PDF"</strong>
+      </div>
+
+      <form id="gate-form" autocomplete="off">
+        <div class="field">
+          <label for="gate-user">Usuário</label>
+          <input id="gate-user" type="text" value="EMPRESA" disabled />
+        </div>
+        <div class="field">
+          <label for="gate-token">Token de acesso</label>
+          <input id="gate-token" type="password" placeholder="[ DIGITE O TOKEN DE ACESSO ENVIADO ]" required />
+        </div>
+        <button id="gate-submit" type="submit" class="btn btn-solid">Validar acesso</button>
+        <div id="gate-error" class="gate-error" role="alert"></div>
+      </form>
     </div>
 
-    <form id="gate-form" autocomplete="off">
-      <div class="field">
-        <label for="gate-user">Usuário</label>
-        <input id="gate-user" type="text" value="EMPRESA" disabled />
+    <div id="gate-expired">
+      <div class="gate-expired-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
       </div>
-      <div class="field">
-        <label for="gate-token">Token de acesso</label>
-        <input id="gate-token" type="password" placeholder="[ DIGITE O TOKEN DE ACESSO ENVIADO ]" required />
+      <div class="gate-expired-title">Token com validade de 15 dias Expirado!</div>
+      <div class="gate-expired-body">
+        Solicite um novo através dos dados de contato, contidos no PDF de origem.
       </div>
-      <button id="gate-submit" type="submit" class="btn btn-solid">Validar acesso</button>
-      <div id="gate-error" class="gate-error" role="alert"></div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -43,6 +55,18 @@
      CONTEÚDO PRINCIPAL (liberado após validação do token)
      ============================================================ -->
 <div id="app">
+
+  <!-- ---------- NAVEGAÇÃO FIXA ---------- -->
+  <nav class="sticky-nav" id="sticky-nav">
+    <div class="wrap sticky-nav-inner">
+      <a href="#sobre" data-nav>Sobre</a>
+      <a href="#jornada" data-nav>Jornada</a>
+      <a href="#apps" data-nav>Apps</a>
+      <a href="#metricas" data-nav>Métricas</a>
+      <a href="#faq" data-nav>FAQ</a>
+      <a href="#contato" data-nav>Contato</a>
+    </div>
+  </nav>
 
   <!-- ---------- BOAS-VINDAS ---------- -->
   <div class="welcome-strip">
@@ -78,7 +102,7 @@
 
         <div class="app-media">
           <div class="player chamfer" data-player-id="pmp">
-            <img class="thumb" src="assets/thumbs/pmp-pmo.png" alt="Thumbnail do vídeo de demonstração do app PMP-PMO" />
+            <img class="thumb" src="assets/thumbs/pmp-pmo.png" alt="Thumbnail do vídeo de demonstração do app PMP-PMO" loading="lazy" />
             <button class="play-btn" data-youtube-id="rnodcNFOX6s" data-player-id="pmp" aria-label="Reproduzir vídeo de demonstração do PMP-PMO">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
@@ -137,7 +161,7 @@
   </section>
 
   <!-- ---------- MANIFESTO (Seção D) ---------- -->
-  <section class="manifesto">
+  <section class="manifesto reveal">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">O Manifesto</span>
@@ -165,7 +189,7 @@
   </section>
 
   <!-- ---------- SOBRE O ESPECIALISTA (Seção E) ---------- -->
-  <section class="bio" id="sobre">
+  <section class="bio reveal" id="sobre">
     <div class="wrap bio-grid">
       <div class="bio-copy">
         <span class="eyebrow">Sobre o especialista</span>
@@ -188,8 +212,50 @@
     </div>
   </section>
 
+  <!-- ---------- MINHA JORNADA (storytelling) ---------- -->
+  <section class="journey reveal" id="jornada">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Minha jornada</span>
+        <h2>Da sala de aula ao código que gerencia fábricas</h2>
+        <p>Antes de escrever a primeira linha de um desses aplicativos, o caminho passou por outros lugares — e cada um deles deixou uma marca no que este portfólio é hoje.</p>
+      </div>
+
+      <div class="journey-timeline">
+        <div class="journey-item">
+          <div class="journey-dot">01</div>
+          <div class="journey-content">
+            <h3>Formar pessoas</h3>
+            <p>Anos dedicados à docência técnico-profissional, na FIEB/SENAI. Foi ali que aprendi, na prática, que ensinar bem exige entender profundamente a dor de quem está do outro lado.</p>
+          </div>
+        </div>
+        <div class="journey-item">
+          <div class="journey-dot">02</div>
+          <div class="journey-content">
+            <h3>Aplicar na prática</h3>
+            <p>Redirecionei essa bagagem para a operação industrial, colocando os MBAs e especializações acumulados ao longo do caminho a serviço de problemas reais de gestão — não mais só em teoria.</p>
+          </div>
+        </div>
+        <div class="journey-item">
+          <div class="journey-dot">03</div>
+          <div class="journey-content">
+            <h3>Construir com as próprias mãos</h3>
+            <p>Decidi ir um passo além: usar IA aplicada e engenharia de prompt para desenvolver, sozinho, as ferramentas que a indústria realmente precisa. Os 5 apps deste portfólio são o resultado desse passo.</p>
+          </div>
+        </div>
+        <div class="journey-item">
+          <div class="journey-dot">04</div>
+          <div class="journey-content">
+            <h3>Próximo capítulo</h3>
+            <p>Hoje, busco onde essa combinação — domínio técnico de gestão e capacidade de construir — gera mais impacto: numa indústria, num produto de software, ou como consultor.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ---------- BADGES DE AUTORIDADE (Seção K) ---------- -->
-  <section class="badges">
+  <section class="badges reveal">
     <div class="wrap badges-row">
       <span class="badge-pill">Bundle Size: Ultra-Lightweight</span>
       <span class="badge-pill">Performance Score: 100/100 Lighthouse</span>
@@ -199,12 +265,12 @@
   </section>
 
   <!-- ---------- APP 2: PCM-EAM/CMMS (vídeo à direita) ---------- -->
-  <section class="app-section">
+  <section class="app-section reveal">
     <div class="wrap">
       <div class="app-card reverse">
         <div class="app-media">
           <div class="player chamfer" data-player-id="pcm">
-            <img class="thumb" src="assets/thumbs/pcm-eam-cmms.png" alt="Thumbnail do vídeo de demonstração do app PCM-EAM/CMMS" />
+            <img class="thumb" src="assets/thumbs/pcm-eam-cmms.png" alt="Thumbnail do vídeo de demonstração do app PCM-EAM/CMMS" loading="lazy" />
             <button class="play-btn" data-youtube-id="eg8LZWpK6wo" data-player-id="pcm" aria-label="Reproduzir vídeo de demonstração do PCM-EAM/CMMS">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
@@ -251,12 +317,12 @@
   </section>
 
   <!-- ---------- APP 3: BPM-CBOK (vídeo à esquerda) ---------- -->
-  <section class="app-section">
+  <section class="app-section reveal">
     <div class="wrap">
       <div class="app-card">
         <div class="app-media">
           <div class="player chamfer" data-player-id="bpm">
-            <img class="thumb" src="assets/thumbs/bpm-cbok.png" alt="Thumbnail do vídeo de demonstração do app BPM-CBOK" />
+            <img class="thumb" src="assets/thumbs/bpm-cbok.png" alt="Thumbnail do vídeo de demonstração do app BPM-CBOK" loading="lazy" />
             <button class="play-btn" data-youtube-id="t0pCwSgc8g8" data-player-id="bpm" aria-label="Reproduzir vídeo de demonstração do BPM-CBOK">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
@@ -304,12 +370,12 @@
   </section>
 
   <!-- ---------- APP 4: LEAN SIX SIGMA + LEAN MANUFACTURING (vídeo à direita) ---------- -->
-  <section class="app-section">
+  <section class="app-section reveal">
     <div class="wrap">
       <div class="app-card reverse">
         <div class="app-media">
           <div class="player chamfer" data-player-id="lss">
-            <img class="thumb" src="assets/thumbs/lean-six-sigma.png" alt="Thumbnail do vídeo de demonstração do app Lean Six Sigma + Lean Manufacturing" />
+            <img class="thumb" src="assets/thumbs/lean-six-sigma.png" alt="Thumbnail do vídeo de demonstração do app Lean Six Sigma + Lean Manufacturing" loading="lazy" />
             <button class="play-btn" data-youtube-id="Y3_qkbfIqsU" data-player-id="lss" aria-label="Reproduzir vídeo de demonstração do Lean Six Sigma">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
@@ -357,12 +423,12 @@
   </section>
 
   <!-- ---------- APP 5: SST-SGG (vídeo à esquerda) ---------- -->
-  <section class="app-section">
+  <section class="app-section reveal">
     <div class="wrap">
       <div class="app-card">
         <div class="app-media">
           <div class="player chamfer" data-player-id="sst">
-            <img class="thumb" src="assets/thumbs/sst-sgg.png" alt="Thumbnail do vídeo de demonstração do app SST-SGG" />
+            <img class="thumb" src="assets/thumbs/sst-sgg.png" alt="Thumbnail do vídeo de demonstração do app SST-SGG" loading="lazy" />
             <button class="play-btn" data-youtube-id="0EFukngH7oM" data-player-id="sst" aria-label="Reproduzir vídeo de demonstração do SST-SGG">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
@@ -409,7 +475,7 @@
   </section>
 
   <!-- ---------- MÉTRICAS DAS FERRAMENTAS (Seção G) ---------- -->
-  <section class="metrics" id="metricas">
+  <section class="metrics reveal" id="metricas">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Métricas das ferramentas</span>
@@ -528,7 +594,7 @@
   </section>
 
   <!-- ---------- FAQ (Seção H) ---------- -->
-  <section class="faq" id="faq">
+  <section class="faq reveal" id="faq">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Perguntas frequentes</span>
@@ -624,7 +690,7 @@
   </section>
 
   <!-- ---------- AUTOMAÇÕES DE CONTATO (Seção I) ---------- -->
-  <section class="contact" id="contato">
+  <section class="contact reveal" id="contato">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Vamos conversar</span>
@@ -660,6 +726,14 @@
       </div>
     </div>
   </section>
+
+  <!-- ---------- RODAPÉ ---------- -->
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>© Indústria 360 — Eduardo Mendes. Portal técnico privado, uso mediante convite.</span>
+      <span>Seus dados (nome, e-mail, motivo de contato) são usados apenas para retorno direto — nunca compartilhados com terceiros.</span>
+    </div>
+  </footer>
 
 </div>
 
