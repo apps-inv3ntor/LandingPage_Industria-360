@@ -977,6 +977,122 @@ body.unlocked #gate {
   padding: 9px 16px;
   border-radius: 999px;
   background: rgba(0, 216, 255, 0.05);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.badge-pill:hover {
+  background: rgba(0, 216, 255, 0.14);
+  border-color: var(--cyan);
+}
+
+.badge-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  flex-shrink: 0;
+}
+
+.badges-note {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  margin: 14px 0 0;
+}
+
+/* ---------- MODAL TÉCNICO DAS BADGES ---------- */
+
+#badge-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  background: rgba(6, 10, 16, 0.75);
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#badge-modal-overlay.open { display: flex; }
+
+#badge-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 82vh;
+  overflow-y: auto;
+  background: var(--bg-panel-solid);
+  border: 1px solid var(--border-hairline-strong);
+}
+
+.badge-modal-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-panel-solid);
+  border-bottom: 1px solid var(--border-hairline);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.badge-modal-head button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#badge-modal-body { padding: 20px; }
+
+#badge-modal-body p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+
+#badge-modal-body .metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-hairline);
+  font-size: 12.5px;
+}
+#badge-modal-body .metric-row:last-child { border-bottom: none; }
+
+.metric-name { color: var(--text-secondary); }
+.metric-value { font-family: var(--font-mono); font-weight: 600; }
+.metric-value.good { color: var(--green); }
+.metric-value.mid { color: var(--orange); }
+.metric-value.bad { color: #ff4444; }
+.metric-value.na { color: var(--text-secondary); }
+
+.metric-caption {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.badge-disclaimer {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--orange);
+  background: rgba(255, 78, 0, 0.05);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 /* ---------- SECTION HEADER (reutilizável) ---------- */

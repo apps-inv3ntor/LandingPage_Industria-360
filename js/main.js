@@ -738,6 +738,173 @@
     });
   }
 
+  /* =================================================================
+     9) BADGES TÉCNICAS — métricas reais, medidas ao vivo neste
+     carregamento de página via APIs nativas do navegador (a mesma
+     base que ferramentas como o Lighthouse usam) — não são alegações
+     estáticas. Cada badge recalcula na hora em que é aberta.
+     ================================================================= */
+
+  let cwvLCP = null;
+  let cwvCLS = 0;
+  let cwvINP = null;
+
+  if ("PerformanceObserver" in window) {
+    try {
+      new PerformanceObserver(function (list) {
+        const entries = list.getEntries();
+        const last = entries[entries.length - 1];
+        if (last) cwvLCP = last.renderTime || last.loadTime || null;
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    } catch (err) { /* navegador sem suporte a este tipo de entrada */ }
+
+    try {
+      new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (entry) {
+          if (!entry.hadRecentInput) cwvCLS += entry.value;
+        });
+      }).observe({ type: "layout-shift", buffered: true });
+    } catch (err) { /* noop */ }
+
+    try {
+      new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (entry) {
+          if (cwvINP === null || entry.duration > cwvINP) cwvINP = entry.duration;
+        });
+      }).observe({ type: "event", buffered: true, durationThreshold: 40 });
+    } catch (err) { /* noop — navegador sem suporte a "event timing" */ }
+  }
+
+  function fmtMs(ms) {
+    return ms === null || ms === undefined ? null : (ms / 1000).toFixed(2) + "s";
+  }
+
+  function classeCwv(valor, bom, medio) {
+    if (valor === null || valor === undefined) return "na";
+    if (valor <= bom) return "good";
+    if (valor <= medio) return "mid";
+    return "bad";
+  }
+
+  function getResourceStats() {
+    const resources = performance.getEntriesByType("resource");
+    const nav = performance.getEntriesByType("navigation")[0];
+    let total = nav && nav.transferSize ? nav.transferSize : 0;
+    let semCorsCount = 0;
+    const porTipo = {};
+
+    resources.forEach(function (r) {
+      const tipo = r.initiatorType || "outro";
+      const bytes = r.transferSize || 0;
+      if (bytes === 0) semCorsCount++;
+      porTipo[tipo] = (porTipo[tipo] || 0) + bytes;
+      total += bytes;
+    });
+
+    return { total: total, porTipo: porTipo, count: resources.length + (nav ? 1 : 0), semCorsCount: semCorsCount };
+  }
+
+  function getRequestBreakdown() {
+    const resources = performance.getEntriesByType("resource");
+    const origin = location.origin;
+    let firstParty = 0;
+    const thirdPartyHosts = {};
+
+    resources.forEach(function (r) {
+      try {
+        const u = new URL(r.name);
+        if (u.origin === origin) firstParty++;
+        else thirdPartyHosts[u.hostname] = (thirdPartyHosts[u.hostname] || 0) + 1;
+      } catch (err) { /* noop */ }
+    });
+
+    return { firstParty: firstParty, thirdPartyHosts: thirdPartyHosts };
+  }
+
+  function fmtKB(bytes) {
+    return (bytes / 1024).toFixed(1) + " KB";
+  }
+
+  const badgeModalOverlay = document.getElementById("badge-modal-overlay");
+  const badgeModalTitle = document.getElementById("badge-modal-title");
+  const badgeModalBody = document.getElementById("badge-modal-body");
+  const badgeModalClose = document.getElementById("badge-modal-close");
+
+  function openBadgeModal(tipo) {
+    let title = "";
+    let html = "";
+
+    if (tipo === "bundle") {
+      const stats = getResourceStats();
+      title = "BUNDLE SIZE — MEDIÇÃO REAL";
+      html =
+        '<p>Soma real de bytes transferidos nesta página, medida agora via <code>Performance API</code> do seu próprio navegador — inclui HTML, CSS, JS, fontes e imagens já carregadas até este momento.</p>' +
+        '<div class="metric-row"><span class="metric-name">Total transferido</span><span class="metric-value good">' + fmtKB(stats.total) + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">Requisições feitas</span><span class="metric-value">' + stats.count + '</span></div>' +
+        Object.keys(stats.porTipo).map(function (tipoRecurso) {
+          return '<div class="metric-row"><span class="metric-name">&nbsp;&nbsp;↳ ' + tipoRecurso + '</span><span class="metric-value">' + fmtKB(stats.porTipo[tipoRecurso]) + '</span></div>';
+        }).join("") +
+        '<div class="badge-disclaimer">Recursos de terceiros (YouTube, fontes do Google) sem cabeçalho CORS liberado podem contar como 0 bytes aqui — é uma limitação do próprio navegador em medir origens externas, não do nosso código. O número tende a crescer conforme você navega e mais vídeos/seções carregam.</div>';
+    }
+
+    if (tipo === "performance") {
+      title = "PERFORMANCE — CORE WEB VITALS AO VIVO";
+      const lcpTxt = fmtMs(cwvLCP);
+      const clsTxt = cwvCLS.toFixed(3);
+      const inpTxt = cwvINP === null ? null : Math.round(cwvINP) + "ms";
+      html =
+        '<p>As mesmas métricas de campo que o Google usa para avaliar experiência real de uso — medidas neste exato carregamento, com a API nativa <code>PerformanceObserver</code> do seu navegador. Não é uma simulação de laboratório.</p>' +
+        '<div class="metric-row"><span class="metric-name">LCP — maior elemento renderizado</span><span class="metric-value ' + classeCwv(cwvLCP, 2500, 4000) + '">' + (lcpTxt || "medindo…") + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">CLS — estabilidade visual</span><span class="metric-value ' + classeCwv(cwvCLS, 0.1, 0.25) + '">' + clsTxt + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">INP — resposta à interação</span><span class="metric-value ' + (inpTxt ? classeCwv(cwvINP, 200, 500) : "na") + '">' + (inpTxt || "aguardando interação") + '</span></div>' +
+        '<div class="badge-disclaimer">INP só aparece depois que você clica em algo na página (é a definição da métrica — mede resposta a uma interação real). Se estiver "aguardando interação", clique em qualquer botão e reabra esta badge.</div>';
+    }
+
+    if (tipo === "latency") {
+      const req = getRequestBreakdown();
+      const hosts = Object.keys(req.thirdPartyHosts);
+      title = "ZERO SERVER LATENCY — ARQUITETURA CLIENT-SIDE";
+      html =
+        '<p>Esta página não tem backend próprio — não existe um servidor nosso processando requisições. Tudo o que você vê é HTML/CSS/JS estático, servido direto do GitHub Pages, com a lógica rodando no seu navegador.</p>' +
+        '<div class="metric-row"><span class="metric-name">Chamadas a servidor próprio (backend)</span><span class="metric-value good">0</span></div>' +
+        '<div class="metric-row"><span class="metric-name">Requisições a arquivos estáticos (1st-party)</span><span class="metric-value">' + req.firstParty + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">Serviços de terceiros em uso</span><span class="metric-value">' + hosts.length + '</span></div>' +
+        (hosts.length
+          ? '<div class="metric-caption">' + hosts.join(", ") + '</div>'
+          : '') +
+        '<div class="badge-disclaimer">Serviços de terceiros (YouTube, geolocalização por IP, telemetria via Google Apps Script) existem, mas nenhum é um backend nosso — são chamadas diretas do seu navegador para APIs públicas de terceiros.</div>';
+    }
+
+    if (tipo === "typesafe") {
+      title = "TYPE-SAFE ARCHITECTURE — OS 5 APPS";
+      html =
+        '<p>Esta badge descreve a arquitetura dos <strong>5 aplicativos do portfólio</strong> (PMP-PMO, PCM-EAM/CMMS, BPM-CBOK, Lean Six Sigma, SST-SGG) — não desta landing page em si, que é HTML/CSS/JavaScript puro por design (mais leve, sem etapa de build).</p>' +
+        '<p>Os apps são construídos com TypeScript e TanStack, o que significa checagem de tipos em tempo de compilação (menos bugs silenciosos) e gerenciamento de estado/dados assíncronos consistente entre todos os módulos.</p>' +
+        '<div class="badge-disclaimer">Quer ver o código ou uma demonstração técnica mais a fundo de algum app específico? É só chamar pelo WhatsApp ou e-mail na seção de contato.</div>';
+    }
+
+    badgeModalTitle.textContent = title;
+    badgeModalBody.innerHTML = html;
+    badgeModalOverlay.classList.add("open");
+    sendTelemetry("badge_click", tipo);
+  }
+
+  function closeBadgeModal() {
+    badgeModalOverlay.classList.remove("open");
+  }
+
+  document.querySelectorAll("[data-badge]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openBadgeModal(btn.getAttribute("data-badge"));
+    });
+  });
+  if (badgeModalClose) badgeModalClose.addEventListener("click", closeBadgeModal);
+  if (badgeModalOverlay) {
+    badgeModalOverlay.addEventListener("click", function (e) {
+      if (e.target === badgeModalOverlay) closeBadgeModal();
+    });
+  }
+
   // rastreia cliques na navegação fixa e nos CTAs do hero
   document.querySelectorAll('.sticky-nav a[data-nav]').forEach(function (link) {
     link.addEventListener("click", function () {

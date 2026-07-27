@@ -257,12 +257,24 @@
   <!-- ---------- BADGES DE AUTORIDADE (Seção K) ---------- -->
   <section class="badges reveal">
     <div class="wrap badges-row">
-      <span class="badge-pill">Bundle Size: Ultra-Lightweight</span>
-      <span class="badge-pill">Performance Score: 100/100 Lighthouse</span>
-      <span class="badge-pill">Zero Server Latency (Edge/Client-Side)</span>
-      <span class="badge-pill">Type-Safe Architecture (TypeScript/TanStack)</span>
+      <button class="badge-pill" type="button" data-badge="bundle">Bundle Size <span class="badge-live-dot"></span></button>
+      <button class="badge-pill" type="button" data-badge="performance">Performance — Core Web Vitals <span class="badge-live-dot"></span></button>
+      <button class="badge-pill" type="button" data-badge="latency">Zero Server Latency <span class="badge-live-dot"></span></button>
+      <button class="badge-pill" type="button" data-badge="typesafe">Type-Safe Architecture</button>
     </div>
+    <p class="badges-note">Clique numa badge para ver a métrica real, medida ao vivo neste seu carregamento de página — não é uma alegação estática.</p>
   </section>
+
+  <!-- ---------- MODAL TÉCNICO DAS BADGES ---------- -->
+  <div id="badge-modal-overlay">
+    <div id="badge-modal" class="panel chamfer">
+      <div class="badge-modal-head">
+        <span id="badge-modal-title">—</span>
+        <button id="badge-modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <div id="badge-modal-body"></div>
+    </div>
+  </div>
 
   <!-- ---------- APP 2: PCM-EAM/CMMS (vídeo à direita) ---------- -->
   <section class="app-section reveal">
