@@ -737,4 +737,16 @@
       el.classList.add("is-visible");
     });
   }
+
+  // rastreia cliques na navegação fixa e nos CTAs do hero
+  document.querySelectorAll('.sticky-nav a[data-nav]').forEach(function (link) {
+    link.addEventListener("click", function () {
+      sendTelemetry("nav_click", link.textContent.trim().toUpperCase());
+    });
+  });
+  document.querySelectorAll('[data-cta]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      sendTelemetry("nav_click", btn.getAttribute("data-cta") === "ver_5_apps" ? "VER OS 5 APPS" : "FALAR COM O EDUARDO");
+    });
+  });
 })();
