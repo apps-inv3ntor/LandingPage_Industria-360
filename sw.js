@@ -4,12 +4,14 @@
    - HTML (index.html, dashboard.html): network-first, cai para cache
      só se estiver offline (garante que o gate/token e a telemetria
      estejam sempre atualizados quando há conexão).
-   - CSS/JS/imagens/ícones: cache-first (mudam pouco, carregam mais
-     rápido e habilitam funcionamento do "app instalado" com sinal
-     fraco de rede).
+   - CSS/JS/imagens/ícones: stale-while-revalidate. Responde na hora
+     com o que já está em cache (rápido), e em paralelo busca uma
+     versão nova na rede pra atualizar o cache — a visita seguinte já
+     vem atualizada sozinha. NÃO depende de bumping manual de versão:
+     toda visita com internet automaticamente refresca o cache.
    =================================================================== */
 
-const CACHE_NAME = "industria360-v1";
+const CACHE_NAME = "industria360-cache";
 
 const STATIC_ASSETS = [
   "./",
@@ -78,16 +80,22 @@ self.addEventListener("fetch", (event) => {
         .catch(() => caches.match(req).then((cached) => cached || caches.match("./index.html")))
     );
   } else {
-    // cache-first para estáticos (CSS/JS/imagens/ícones)
+    // stale-while-revalidate para estáticos (CSS/JS/imagens/ícones):
+    // devolve o cache imediatamente se existir, e sempre dispara uma
+    // busca na rede em paralelo para manter o cache atualizado —
+    // é essa busca em paralelo que elimina a necessidade de bump manual.
     event.respondWith(
-      caches.match(req).then((cached) => {
-        if (cached) return cached;
-        return fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-          return res;
-        });
-      })
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(req).then((cached) => {
+          const networkFetch = fetch(req)
+            .then((res) => {
+              if (res && res.ok) cache.put(req, res.clone());
+              return res;
+            })
+            .catch(() => cached);
+          return cached || networkFetch;
+        })
+      )
     );
   }
 });
