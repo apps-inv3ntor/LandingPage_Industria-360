@@ -221,6 +221,35 @@ table.data-table td.strong { color: var(--text-primary); }
   .rank-grid { grid-template-columns: 1fr; }
 }
 
+/* ------------------------------------------------------------
+   REFINO MOBILE (smartphones) — o breakpoint de 860px acima já
+   resolve tablets; aqui cobrimos telas de telefone de verdade.
+   ------------------------------------------------------------ */
+@media (max-width: 560px) {
+  .wrap { padding: 0 16px 48px; }
+
+  header.top { padding: 16px 16px; gap: 10px; }
+  header.top h1 { font-size: 13px; }
+  header.top > div { width: 100%; justify-content: space-between; }
+
+  h2.section-title { font-size: 12px; margin: 32px 0 14px; }
+
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi-card { padding: 14px; }
+  .kpi-card .value { font-size: 22px; }
+  .kpi-card .label { font-size: 9px; }
+
+  .bar-list, .region-list { padding: 16px; }
+  table.data-table { font-size: 11px; }
+  table.data-table th, table.data-table td { padding: 8px 10px; }
+
+  .gate-box { max-width: none; width: calc(100% - 16px); padding: 26px 20px; }
+}
+
+@media (max-width: 380px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+
 .export-btn {
   font-family: var(--font-mono);
   font-size: 11px;

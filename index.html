@@ -2,9 +2,20 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Indústria 360 — Portfólio Técnico Restrito</title>
 <meta name="robots" content="noindex, nofollow" />
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#090e14" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Indústria 360" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-192.png" type="image/png" />
+
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -779,6 +790,49 @@
   </div>
 </div>
 
+<!-- ---------- BOTÃO DE INSTALAÇÃO DO APP (PWA) ---------- -->
+<button id="pwa-install-btn" class="pwa-install-btn" hidden>
+  <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v10.5m0 0 4-4m-4 4-4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span>Instalar app</span>
+</button>
+
 <script src="js/main.js"></script>
+<script>
+  // registro do service worker — habilita instalação como app no Android
+  // e cache básico dos assets estáticos (não interfere no gate/token)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+
+  // botão "Instalar app" — só aparece quando o Chrome/Android sinaliza
+  // que a instalação é elegível (beforeinstallprompt)
+  (function () {
+    let deferredPrompt = null;
+    const installBtn = document.getElementById("pwa-install-btn");
+
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installBtn) installBtn.hidden = false;
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener("click", function () {
+        if (!deferredPrompt) return;
+        installBtn.hidden = true;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function () {
+          deferredPrompt = null;
+        });
+      });
+    }
+
+    window.addEventListener("appinstalled", function () {
+      if (installBtn) installBtn.hidden = true;
+    });
+  })();
+</script>
 </body>
 </html>

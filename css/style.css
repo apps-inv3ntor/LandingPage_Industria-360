@@ -1570,3 +1570,120 @@ table.metrics-table td.gain { color: var(--green); font-weight: 500; }
   .app-card.reverse .app-media { order: 2; }
   .app-card.reverse .app-copy { order: 1; }
 }
+
+/* ===================================================================
+   PWA — BOTÃO DE INSTALAÇÃO
+   =================================================================== */
+
+.pwa-install-btn {
+  position: fixed;
+  left: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 498;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline-strong);
+  background: var(--bg-panel-solid);
+  color: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.pwa-install-btn:hover {
+  background: rgba(0, 216, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.pwa-install-btn[hidden] { display: none; }
+
+/* ===================================================================
+   REFINO MOBILE (smartphones) — Android/iOS
+   Cobre o que o breakpoint de 860px (tablets) não resolve sozinho:
+   respiro de toque, controles de vídeo compactos, safe-area de
+   notch/gesture-bar e área útil menor.
+   =================================================================== */
+
+@media (max-width: 640px) {
+  /* --- respiro geral de seção em telas pequenas --- */
+  :root {
+    --section-gap: clamp(56px, 14vw, 96px);
+  }
+
+  /* --- gate (tela de login) --- */
+  .gate-card { padding: 32px 22px 28px; }
+  .gate-brand .mark { font-size: 19px; }
+
+  /* --- nav fixa: menos espaçamento, mantém scroll horizontal --- */
+  .sticky-nav-inner { gap: 16px; padding: 10px 0; }
+  .sticky-nav a { font-size: 10.5px; }
+
+  .welcome-inner { font-size: 12px; }
+
+  /* --- hero --- */
+  .hero { padding-top: 90px; }
+  .hero-copy p.lede { max-width: none; }
+  .hero-cta { gap: 10px; }
+  .hero-cta .btn { flex: 1 1 auto; justify-content: center; padding: 13px 18px; }
+
+  /* --- player de vídeo: controles compactos em telas estreitas --- */
+  .custom-controls { padding: 8px 10px; gap: 6px; }
+  .cc-btn { width: 30px; height: 30px; }
+  .cc-quality { gap: 4px; }
+  .cc-q-btn { padding: 6px 8px; font-size: 9px; }
+
+  /* --- badges e metrics tabs: toque mais confortável --- */
+  .badge-pill { padding: 8px 13px; font-size: 10px; }
+  .metrics-tabs { gap: 8px; }
+  .metrics-tab { padding: 9px 13px; font-size: 10px; }
+
+  /* --- journey timeline: dot menor, menos indent --- */
+  .journey-dot { width: 38px; height: 38px; font-size: 11px; }
+  .journey-item { gap: 16px; }
+
+  /* --- widget de chat: vira folha inferior full-width --- */
+  #chat-widget {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: none;
+  }
+  .chat-body { max-height: 60vh; }
+
+  #chat-fab {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
+  }
+
+  /* --- botão de instalar PWA não sobrepõe o FAB de chat --- */
+  .pwa-install-btn {
+    left: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 14px;
+    font-size: 10px;
+  }
+
+  /* --- contato: cards em coluna única, já herdado do breakpoint 560px --- */
+  .contact-card { padding: 22px 20px; }
+
+  /* --- rodapé --- */
+  .footer-inner { font-size: 10px; }
+}
+
+/* telas muito estreitas (ex.: dispositivos dobráveis fechados, ~360px) */
+@media (max-width: 380px) {
+  .cc-quality { display: none; } /* seletor de qualidade sai do caminho; permanece acessível via tela cheia nativa do player */
+  .gate-card { padding: 26px 16px 22px; }
+  .pwa-install-btn span { display: none; }
+}
