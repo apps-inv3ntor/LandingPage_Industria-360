@@ -244,10 +244,17 @@
   document.body.classList.add("no-select");
 
   document.addEventListener("contextmenu", function (e) {
+    // campos de formulário (token, nome, e-mail etc.) ficam de fora da
+    // proteção — no mobile, o toque longo é o único jeito de colar,
+    // já que não existe atalho de teclado (Ctrl+V) no celular
+    const tag = e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
     e.preventDefault();
   });
 
   document.addEventListener("copy", function (e) {
+    const tag = e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
     e.preventDefault();
   });
 
