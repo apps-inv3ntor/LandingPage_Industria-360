@@ -1554,7 +1554,7 @@ table.metrics-table td.gain { color: var(--green); font-weight: 500; }
 @media (max-width: 860px) {
   .hero-grid { grid-template-columns: 1fr; }
   .hero { padding-top: 110px; }
-  .app-card { grid-template-columns: 1fr; gap: 28px; }
+  .app-card, .app-card.reverse { grid-template-columns: 1fr; gap: 28px; }
   .app-card.reverse .app-media { order: 1; }
   .app-card.reverse .app-copy { order: 2; }
   .manifesto-grid { grid-template-columns: 1fr; }
