@@ -837,57 +837,64 @@
   const badgeModalBody = document.getElementById("badge-modal-body");
   const badgeModalClose = document.getElementById("badge-modal-close");
 
+  function t(key, fallback) {
+    return (typeof window.i360GetText === "function") ? window.i360GetText(key, fallback) : fallback;
+  }
+
+  let lastBadgeType = null;
+
   function openBadgeModal(tipo) {
+    lastBadgeType = tipo;
     let title = "";
     let html = "";
 
     if (tipo === "bundle") {
       const stats = getResourceStats();
-      title = "BUNDLE SIZE — MEDIÇÃO REAL";
+      title = t("badgeModal.bundle.title", "BUNDLE SIZE — MEDIÇÃO REAL");
       html =
-        '<p>Soma real de bytes transferidos nesta página, medida agora via <code>Performance API</code> do seu próprio navegador — inclui HTML, CSS, JS, fontes e imagens já carregadas até este momento.</p>' +
-        '<div class="metric-row"><span class="metric-name">Total transferido</span><span class="metric-value good">' + fmtKB(stats.total) + '</span></div>' +
-        '<div class="metric-row"><span class="metric-name">Requisições feitas</span><span class="metric-value">' + stats.count + '</span></div>' +
+        '<p>' + t("badgeModal.bundle.desc", 'Soma real de bytes transferidos nesta página, medida agora via <code>Performance API</code> do seu próprio navegador — inclui HTML, CSS, JS, fontes e imagens já carregadas até este momento.') + '</p>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.bundle.totalLabel", "Total transferido") + '</span><span class="metric-value good">' + fmtKB(stats.total) + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.bundle.requestsLabel", "Requisições feitas") + '</span><span class="metric-value">' + stats.count + '</span></div>' +
         Object.keys(stats.porTipo).map(function (tipoRecurso) {
           return '<div class="metric-row"><span class="metric-name">&nbsp;&nbsp;↳ ' + tipoRecurso + '</span><span class="metric-value">' + fmtKB(stats.porTipo[tipoRecurso]) + '</span></div>';
         }).join("") +
-        '<div class="badge-disclaimer">Recursos de terceiros (YouTube, fontes do Google) sem cabeçalho CORS liberado podem contar como 0 bytes aqui — é uma limitação do próprio navegador em medir origens externas, não do nosso código. O número tende a crescer conforme você navega e mais vídeos/seções carregam.</div>';
+        '<div class="badge-disclaimer">' + t("badgeModal.bundle.disclaimer", "Recursos de terceiros (YouTube, fontes do Google) sem cabeçalho CORS liberado podem contar como 0 bytes aqui — é uma limitação do próprio navegador em medir origens externas, não do nosso código. O número tende a crescer conforme você navega e mais vídeos/seções carregam.") + '</div>';
     }
 
     if (tipo === "performance") {
-      title = "PERFORMANCE — CORE WEB VITALS AO VIVO";
+      title = t("badgeModal.performance.title", "PERFORMANCE — CORE WEB VITALS AO VIVO");
       const lcpTxt = fmtMs(cwvLCP);
       const clsTxt = cwvCLS.toFixed(3);
       const inpTxt = cwvINP === null ? null : Math.round(cwvINP) + "ms";
       html =
-        '<p>As mesmas métricas de campo que o Google usa para avaliar experiência real de uso — medidas neste exato carregamento, com a API nativa <code>PerformanceObserver</code> do seu navegador. Não é uma simulação de laboratório.</p>' +
-        '<div class="metric-row"><span class="metric-name">LCP — maior elemento renderizado</span><span class="metric-value ' + classeCwv(cwvLCP, 2500, 4000) + '">' + (lcpTxt || "medindo…") + '</span></div>' +
-        '<div class="metric-row"><span class="metric-name">CLS — estabilidade visual</span><span class="metric-value ' + classeCwv(cwvCLS, 0.1, 0.25) + '">' + clsTxt + '</span></div>' +
-        '<div class="metric-row"><span class="metric-name">INP — resposta à interação</span><span class="metric-value ' + (inpTxt ? classeCwv(cwvINP, 200, 500) : "na") + '">' + (inpTxt || "aguardando interação") + '</span></div>' +
-        '<div class="badge-disclaimer">INP só aparece depois que você clica em algo na página (é a definição da métrica — mede resposta a uma interação real). Se estiver "aguardando interação", clique em qualquer botão e reabra esta badge.</div>';
+        '<p>' + t("badgeModal.performance.desc", 'As mesmas métricas de campo que o Google usa para avaliar experiência real de uso — medidas neste exato carregamento, com a API nativa <code>PerformanceObserver</code> do seu navegador. Não é uma simulação de laboratório.') + '</p>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.performance.lcpLabel", "LCP — maior elemento renderizado") + '</span><span class="metric-value ' + classeCwv(cwvLCP, 2500, 4000) + '">' + (lcpTxt || t("badgeModal.performance.measuring", "medindo…")) + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.performance.clsLabel", "CLS — estabilidade visual") + '</span><span class="metric-value ' + classeCwv(cwvCLS, 0.1, 0.25) + '">' + clsTxt + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.performance.inpLabel", "INP — resposta à interação") + '</span><span class="metric-value ' + (inpTxt ? classeCwv(cwvINP, 200, 500) : "na") + '">' + (inpTxt || t("badgeModal.performance.waitingInteraction", "aguardando interação")) + '</span></div>' +
+        '<div class="badge-disclaimer">' + t("badgeModal.performance.disclaimer", 'INP só aparece depois que você clica em algo na página (é a definição da métrica — mede resposta a uma interação real). Se estiver "aguardando interação", clique em qualquer botão e reabra esta badge.') + '</div>';
     }
 
     if (tipo === "latency") {
       const req = getRequestBreakdown();
       const hosts = Object.keys(req.thirdPartyHosts);
-      title = "ZERO SERVER LATENCY — ARQUITETURA CLIENT-SIDE";
+      title = t("badgeModal.latency.title", "ZERO SERVER LATENCY — ARQUITETURA CLIENT-SIDE");
       html =
-        '<p>Esta página não tem backend próprio — não existe um servidor nosso processando requisições. Tudo o que você vê é HTML/CSS/JS estático, servido direto do GitHub Pages, com a lógica rodando no seu navegador.</p>' +
-        '<div class="metric-row"><span class="metric-name">Chamadas a servidor próprio (backend)</span><span class="metric-value good">0</span></div>' +
-        '<div class="metric-row"><span class="metric-name">Requisições a arquivos estáticos (1st-party)</span><span class="metric-value">' + req.firstParty + '</span></div>' +
-        '<div class="metric-row"><span class="metric-name">Serviços de terceiros em uso</span><span class="metric-value">' + hosts.length + '</span></div>' +
+        '<p>' + t("badgeModal.latency.desc", "Esta página não tem backend próprio — não existe um servidor nosso processando requisições. Tudo o que você vê é HTML/CSS/JS estático, servido direto do GitHub Pages, com a lógica rodando no seu navegador.") + '</p>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.latency.ownServerLabel", "Chamadas a servidor próprio (backend)") + '</span><span class="metric-value good">0</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.latency.staticRequestsLabel", "Requisições a arquivos estáticos (1st-party)") + '</span><span class="metric-value">' + req.firstParty + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.latency.thirdPartyLabel", "Serviços de terceiros em uso") + '</span><span class="metric-value">' + hosts.length + '</span></div>' +
         (hosts.length
           ? '<div class="metric-caption">' + hosts.join(", ") + '</div>'
           : '') +
-        '<div class="badge-disclaimer">Serviços de terceiros (YouTube, geolocalização por IP, telemetria via Google Apps Script) existem, mas nenhum é um backend nosso — são chamadas diretas do seu navegador para APIs públicas de terceiros.</div>';
+        '<div class="badge-disclaimer">' + t("badgeModal.latency.disclaimer", "Serviços de terceiros (YouTube, geolocalização por IP, telemetria via Google Apps Script) existem, mas nenhum é um backend nosso — são chamadas diretas do seu navegador para APIs públicas de terceiros.") + '</div>';
     }
 
     if (tipo === "typesafe") {
-      title = "TYPE-SAFE ARCHITECTURE — OS 5 APPS";
+      title = t("badgeModal.typesafe.title", "TYPE-SAFE ARCHITECTURE — OS 5 APPS");
       html =
-        '<p>Esta badge descreve a arquitetura dos <strong>5 aplicativos do portfólio</strong> (PMP-PMO, PCM-EAM/CMMS, BPM-CBOK, Lean Six Sigma, SST-SGG) — não desta landing page em si, que é HTML/CSS/JavaScript puro por design (mais leve, sem etapa de build).</p>' +
-        '<p>Os apps são construídos com TypeScript e TanStack, o que significa checagem de tipos em tempo de compilação (menos bugs silenciosos) e gerenciamento de estado/dados assíncronos consistente entre todos os módulos.</p>' +
-        '<div class="badge-disclaimer">Quer ver o código ou uma demonstração técnica mais a fundo de algum app específico? É só chamar pelo WhatsApp ou e-mail na seção de contato.</div>';
+        '<p>' + t("badgeModal.typesafe.p1", 'Esta badge descreve a arquitetura dos <strong>5 aplicativos do portfólio</strong> (PMP-PMO, PCM-EAM/CMMS, BPM-CBOK, Lean Six Sigma, SST-SGG) — não desta landing page em si, que é HTML/CSS/JavaScript puro por design (mais leve, sem etapa de build).') + '</p>' +
+        '<p>' + t("badgeModal.typesafe.p2", "Os apps são construídos com TypeScript e TanStack, o que significa checagem de tipos em tempo de compilação (menos bugs silenciosos) e gerenciamento de estado/dados assíncronos consistente entre todos os módulos.") + '</p>' +
+        '<div class="badge-disclaimer">' + t("badgeModal.typesafe.disclaimer", "Quer ver o código ou uma demonstração técnica mais a fundo de algum app específico? É só chamar pelo WhatsApp ou e-mail na seção de contato.") + '</div>';
     }
 
     badgeModalTitle.textContent = title;
@@ -895,6 +902,12 @@
     badgeModalOverlay.classList.add("open");
     sendTelemetry("badge_click", tipo);
   }
+
+  document.addEventListener("i360:langchange", function () {
+    if (badgeModalOverlay && badgeModalOverlay.classList.contains("open") && lastBadgeType) {
+      openBadgeModal(lastBadgeType);
+    }
+  });
 
   function closeBadgeModal() {
     badgeModalOverlay.classList.remove("open");
