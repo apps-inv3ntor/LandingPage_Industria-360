@@ -55,6 +55,22 @@
       var key = el.getAttribute("data-i18n-alt");
       if (dict[key] !== undefined) el.setAttribute("alt", dict[key]);
     });
+    document.querySelectorAll("[data-i18n-value]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n-value");
+      if (dict[key] !== undefined) el.value = dict[key];
+    });
+    document.querySelectorAll("[data-i18n-src]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n-src");
+      if (dict[key] === undefined) return;
+      var novoSrc = dict[key];
+      var fallback = el.getAttribute("data-i18n-src-fallback") || el.getAttribute("src");
+      // se o arquivo daquele idioma ainda não existir no servidor, volta
+      // silenciosamente pra thumbnail padrão em vez de mostrar imagem quebrada
+      var testeImg = new Image();
+      testeImg.onload = function () { el.setAttribute("src", novoSrc); };
+      testeImg.onerror = function () { el.setAttribute("src", fallback); };
+      testeImg.src = novoSrc;
+    });
   }
 
   function setActiveButtons(lang) {
