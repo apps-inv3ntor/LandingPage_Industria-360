@@ -447,6 +447,13 @@ body.unlocked #gate {
   color: var(--cyan);
 }
 
+/* Compensa a altura da nav fixa (sticky) ao rolar até uma seção pelo
+   menu — sem isso, o navegador para exatamente no topo da seção e a
+   nav (que fica por cima, position:sticky) esconde o título/eyebrow. */
+#sobre, #jornada, #apps, #metricas, #faq, #contato {
+  scroll-margin-top: 90px;
+}
+
 /* ---------- SCROLL REVEAL ---------- */
 
 .reveal {
@@ -534,6 +541,20 @@ body.unlocked #gate {
   height: 100%;
   object-fit: cover;
 }
+
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+  pointer-events: none; /* puramente decorativo — sem controles, sem interação */
+  z-index: 1;
+}
+
+.hero-video.is-active { opacity: 1; }
 
 .hero-tag {
   position: absolute;

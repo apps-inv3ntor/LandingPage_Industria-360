@@ -106,6 +106,105 @@
   window.addEventListener("pagehide", sendDurationBeacon);
 
   /* =================================================================
+     0.6) TELEMETRIA DE IDIOMA
+     Registra tanto QUAL idioma foi escolhido (clique real do usuário,
+     seja no login ou na navegação) quanto QUANTO TEMPO ele passou em
+     cada idioma (fecha o "segmento" anterior sempre que troca, e no
+     fim da sessão). Só começa a enviar depois do unlock() — antes
+     disso só guardamos o idioma atual em memória.
+     ================================================================= */
+
+  let telemetryStarted = false;
+  let langSegmentLang = null;
+  let langSegmentStart = null;
+
+  function flushLanguageSegment(viaBeacon) {
+    if (!TELEMETRY_URL || !telemetryStarted || !langSegmentLang || !langSegmentStart) return;
+    const tempoS = Math.round((Date.now() - langSegmentStart) / 1000);
+    if (tempoS <= 0) return;
+    const payload = {
+      token: telemetryToken,
+      session_id: getSessionId(),
+      evento: "language_duration",
+      detalhe: langSegmentLang,
+      pais: telemetryGeo ? telemetryGeo.pais : "",
+      regiao: telemetryGeo ? telemetryGeo.regiao : "",
+      cidade: telemetryGeo ? telemetryGeo.cidade : "",
+      tempo_s: tempoS,
+    };
+    try {
+      if (viaBeacon) {
+        navigator.sendBeacon(TELEMETRY_URL, new Blob([JSON.stringify(payload)], { type: "text/plain" }));
+      } else {
+        fetch(TELEMETRY_URL, {
+          method: "POST", mode: "no-cors", keepalive: true,
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload),
+        });
+      }
+    } catch (err) { /* noop */ }
+  }
+
+  function startLanguageTelemetry() {
+    telemetryStarted = true;
+    langSegmentLang = (typeof window.i360GetLang === "function") ? window.i360GetLang() : "pt";
+    langSegmentStart = Date.now();
+  }
+
+  // o i18n.js dispara este evento toda vez que o idioma muda — seja pelo
+  // clique real do usuário (origin "click") ou pela aplicação automática
+  // do idioma salvo ao carregar a página (origin "init")
+  document.addEventListener("i360:langchange", function (e) {
+    const novoLang = e.detail && e.detail.lang;
+    const origem = e.detail && e.detail.origin;
+    if (!novoLang) return;
+
+    if (telemetryStarted) {
+      flushLanguageSegment(false); // fecha o segmento do idioma anterior
+      if (origem === "click") sendTelemetry("language_change", novoLang);
+    }
+    langSegmentLang = novoLang;
+    langSegmentStart = Date.now();
+  });
+
+  // fecha o segmento de idioma em aberto junto com o fim da sessão
+  window.addEventListener("pagehide", function () { flushLanguageSegment(true); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") flushLanguageSegment(true);
+  });
+
+  /* =================================================================
+     0.5) BANNER HERO: imagem estática ↔ vídeo em loop
+     Fica 5s estático, roda o vídeo uma vez, volta a ficar estático por
+     5s, e repete indefinidamente. Sem controles, sem play/pause/tela
+     cheia — puramente decorativo. Só começa depois do unlock() (não
+     desperdiça banda/bateria enquanto o visitante ainda está no login).
+     ================================================================= */
+
+  const HERO_STATIC_MS = 5000;
+
+  function startHeroVideoLoop() {
+    const heroVideo = document.querySelector(".hero-video");
+    if (!heroVideo) return;
+
+    function tocarDepoisDaPausa() {
+      setTimeout(function () {
+        heroVideo.currentTime = 0;
+        const p = heroVideo.play();
+        if (p && p.catch) p.catch(function () { /* autoplay bloqueado — mantém a imagem estática, sem quebrar nada */ });
+        heroVideo.classList.add("is-active");
+      }, HERO_STATIC_MS);
+    }
+
+    heroVideo.addEventListener("ended", function () {
+      heroVideo.classList.remove("is-active");
+      tocarDepoisDaPausa();
+    });
+
+    tocarDepoisDaPausa();
+  }
+
+  /* =================================================================
      1) VALIDAÇÃO DE TOKEN
      Formato: EMP-<base64(DDMMAAHHMMSS + 3 chars aleatórios, invertido)>
      Válido por 15 dias a partir da data/hora codificada no token.
@@ -177,6 +276,8 @@
     telemetryToken = token || "";
     sessionStorage.setItem(TELEMETRY_TOKEN_KEY, telemetryToken);
     initGeoAndTrackPageView();
+    startHeroVideoLoop();
+    startLanguageTelemetry();
   }
 
   function showError(message) {
@@ -230,6 +331,8 @@
       document.body.classList.add("unlocked");
       telemetryToken = sessionStorage.getItem(TELEMETRY_TOKEN_KEY) || "";
       initGeoAndTrackPageView();
+      startHeroVideoLoop();
+      startLanguageTelemetry();
     }
   });
 

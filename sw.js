@@ -71,6 +71,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // vídeos ficam FORA do cache do PWA: o navegador usa requisições
+  // "Range" pra buscar só pedaços do arquivo (necessário pra tocar sem
+  // baixar tudo de uma vez), e isso não combina bem com o Cache API
+  // simples que usamos aqui — deixamos o navegador cuidar disso nativamente.
+  if (/\.(mp4|webm|mov)$/.test(url.pathname)) {
+    return;
+  }
+
   const isHTML = req.headers.get("accept")?.includes("text/html");
 
   if (isHTML) {

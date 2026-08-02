@@ -25,7 +25,7 @@
   "apps.lss.overlay": "Lean Six Sigma — DEMONSTRAÇÃO",
   "apps.lss.playAria": "Reproduzir vídeo de demonstração do Lean Six Sigma",
   "apps.lss.sub1": "Integração com resultantes críticas",
-  "apps.lss.thumb": "assets/thumbs/lean-six-sigma-pt.png",
+  "apps.lss.thumb": "assets/thumbs/lean-six-sigma-pt.jpg",
   "apps.lss.title": "Lean Six Sigma + Lean Manufacturing — Indústria 4.0",
   "apps.pcm.desc": "Manutenção 4.0 através do PCM EAM/CMMS Cockpit: uma plataforma de altíssima densidade analítica projetada para centralizar a operação, antecipar falhas e otimizar o ciclo de vida de ativos industriais complexos. Codificado para rodar 100% client-side e serverless-edge, processando dados sensíveis em milissegundos e persistindo tudo de forma redundante via IndexedDB e localStorage.",
   "apps.pcm.imgAlt": "Thumbnail do vídeo de demonstração do app PCM-EAM/CMMS",

@@ -87,6 +87,7 @@
   function setLanguage(lang, opts) {
     if (SUPPORTED.indexOf(lang) === -1) lang = "pt";
     var persist = !opts || opts.persist !== false;
+    var origin = (opts && opts.origin) || "click";
 
     fetchDict(lang).then(function (dict) {
       currentLang = lang;
@@ -95,7 +96,7 @@
       document.documentElement.setAttribute("lang", lang === "pt" ? "pt-BR" : lang);
       setActiveButtons(lang);
       if (persist) saveLang(lang);
-      document.dispatchEvent(new CustomEvent("i360:langchange", { detail: { lang: lang } }));
+      document.dispatchEvent(new CustomEvent("i360:langchange", { detail: { lang: lang, origin: origin } }));
     });
   }
 
@@ -115,6 +116,6 @@
         setLanguage(btn.getAttribute("data-lang-btn"));
       });
     });
-    setLanguage(getSavedLang(), { persist: false });
+    setLanguage(getSavedLang(), { persist: false, origin: "init" });
   });
 })();

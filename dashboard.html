@@ -401,6 +401,10 @@ body:not(.unlocked) .dash-content { display: none; }
       <div class="rank-label">Perguntas do FAQ mais lidas</div>
       <div class="panel region-list" id="faq-panel"></div>
     </div>
+    <div>
+      <div class="rank-label">Idiomas mais selecionados</div>
+      <div class="panel region-list" id="idiomas-panel"></div>
+    </div>
   </div>
 
   <h2 class="section-title">Leads recentes (Card 4 — E-mail) <span id="leads-tag" class="source-badge" style="margin-left:10px; font-size:9px;">exemplo</span></h2>
@@ -503,6 +507,12 @@ const SAMPLE_DATA = {
     { nome: "Os dados trafegam em servidores de terceiros?", contagem: 5 },
     { nome: "Como o app calcula o Custo da Qualidade (COQ)?", contagem: 3 },
   ],
+  idiomas: [
+    { nome: "Português", contagem: 14, tempoMedio: "5m 02s" },
+    { nome: "English", contagem: 8, tempoMedio: "3m 44s" },
+    { nome: "Español", contagem: 4, tempoMedio: "3m 10s" },
+    { nome: "中文", contagem: 1, tempoMedio: "2m 30s" },
+  ],
   funil: { qtdSessoes: 9, pctSessoes: 33, pctWhatsapp: 62, pctForm: 38, totalContatos: 13 },
   leads_por_dia: [
     { nome: "18/07/2026", contagem: 3 },
@@ -557,6 +567,42 @@ function parseCsv(text) {
 }
 
 const VIDEO_NAMES = { pmp: "PMP-PMO", pcm: "PCM-EAM/CMMS", bpm: "BPM-CBOK", lss: "Lean Six Sigma", sst: "SST-SGG" };
+const LANG_NAMES = { pt: "Português", en: "English", es: "Español", zh: "中文" };
+
+function calcularIdiomas(eventos) {
+  const contagemEscolhas = {};
+  eventos.forEach(function (ev) {
+    if (ev.evento !== "language_change") return;
+    const lang = ev.detalhe || "(desconhecido)";
+    contagemEscolhas[lang] = (contagemEscolhas[lang] || 0) + 1;
+  });
+
+  const somaTempo = {}, qtdTempo = {};
+  eventos.forEach(function (ev) {
+    if (ev.evento !== "language_duration" || !ev.tempo_s) return;
+    const lang = ev.detalhe || "(desconhecido)";
+    const t = parseFloat(ev.tempo_s);
+    if (isNaN(t)) return;
+    somaTempo[lang] = (somaTempo[lang] || 0) + t;
+    qtdTempo[lang] = (qtdTempo[lang] || 0) + 1;
+  });
+
+  const todasChaves = {};
+  Object.keys(contagemEscolhas).forEach(function (k) { todasChaves[k] = true; });
+  Object.keys(somaTempo).forEach(function (k) { todasChaves[k] = true; });
+
+  return Object.keys(todasChaves)
+    .map(function (lang) {
+      const mediaSeg = qtdTempo[lang] ? somaTempo[lang] / qtdTempo[lang] : 0;
+      const tempoMedio = mediaSeg ? Math.floor(mediaSeg / 60) + "m " + Math.round(mediaSeg % 60) + "s" : "—";
+      return {
+        nome: LANG_NAMES[lang] || lang,
+        contagem: contagemEscolhas[lang] || 0,
+        tempoMedio: tempoMedio,
+      };
+    })
+    .sort(function (a, b) { return b.contagem - a.contagem; });
+}
 
 function rankearPorEvento(eventos, tipoEvento, mapaNomes, limite) {
   const contagem = {};
@@ -625,6 +671,7 @@ function calcularMetricasDeEventos(eventos) {
   const metricasRanking = rankearPorEvento(eventos, "metrics_tab_view");
   const faqRanking = rankearPorEvento(eventos, "faq_question_open", null, 6);
   const funilContato = calcularFunilContato(eventos, totalAcessos);
+  const idiomas = calcularIdiomas(eventos);
 
   return {
     totalAcessos: totalAcessos,
@@ -634,6 +681,7 @@ function calcularMetricasDeEventos(eventos) {
     metricasRanking: metricasRanking,
     faqRanking: faqRanking,
     funilContato: funilContato,
+    idiomas: idiomas,
   };
 }
 
@@ -707,6 +755,18 @@ function renderRankList(elId, lista, vazio) {
   }).join("");
 }
 
+function renderIdiomas(elId, lista, vazio) {
+  const panel = document.getElementById(elId);
+  if (!lista.length) {
+    panel.innerHTML = '<div class="region-row"><span>' + vazio + '</span></div>';
+    return;
+  }
+  panel.innerHTML = lista.map(function (item) {
+    return '<div class="region-row"><span>' + esc(item.nome) +
+           '</span><span class="count">' + item.contagem + 'x · ' + esc(item.tempoMedio) + '</span></div>';
+  }).join("");
+}
+
 function renderFunil(funil, telemetryIsLive) {
   const grid = document.getElementById("funil-grid");
   const tagSufixo = telemetryIsLive ? "" : " (exemplo)";
@@ -747,13 +807,14 @@ function renderLeads(lista) {
   }).join("");
 }
 
-function renderAll(kpis, videosRanking, regioes, metricasRanking, faqRanking, funil, leads, leadsAreLive, telemetryIsLive) {
+function renderAll(kpis, videosRanking, regioes, metricasRanking, faqRanking, idiomas, funil, leads, leadsAreLive, telemetryIsLive) {
   renderKpis(kpis, leadsAreLive, telemetryIsLive);
   renderFunil(funil, telemetryIsLive);
   renderRankBar("videos-panel", videosRanking, "Nenhum vídeo assistido ainda");
   renderRankList("region-panel", regioes, "Nenhum acesso registrado ainda");
   renderRankBar("metricas-panel", metricasRanking, "Nenhuma métrica visualizada ainda");
   renderRankList("faq-panel", faqRanking, "Nenhuma pergunta aberta ainda");
+  renderIdiomas("idiomas-panel", idiomas, "Nenhuma troca de idioma registrada ainda");
   renderLeads(leads);
 
   const leadsTag = document.getElementById("leads-tag");
@@ -826,6 +887,7 @@ async function init() {
   let regioes = [{ nome: "Sudeste", contagem: 6 }, { nome: "Nordeste", contagem: 4 }, { nome: "Sul", contagem: 2 }];
   let metricasRanking = SAMPLE_DATA.metricas_ranking;
   let faqRanking = SAMPLE_DATA.faq_ranking;
+  let idiomas = SAMPLE_DATA.idiomas;
   let funil = SAMPLE_DATA.funil;
 
   if (telemetryIsLive) {
@@ -836,12 +898,13 @@ async function init() {
     regioes = m.regioes;
     metricasRanking = m.metricasRanking;
     faqRanking = m.faqRanking;
+    idiomas = m.idiomas;
     funil = m.funilContato;
   }
 
   const leadsOrdenados = leadsAreLive ? leads.slice().reverse() : SAMPLE_DATA.leads;
 
-  renderAll(kpis, videosRanking, regioes, metricasRanking, faqRanking, funil, leadsOrdenados, leadsAreLive, telemetryIsLive);
+  renderAll(kpis, videosRanking, regioes, metricasRanking, faqRanking, idiomas, funil, leadsOrdenados, leadsAreLive, telemetryIsLive);
 }
 
 init();
