@@ -16,7 +16,21 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="icon" href="icons/icon-192.png" type="image/png" />
 
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css?v=2" />
+
+<!-- CSS crítico do banner de vídeo, embutido de propósito: garante que
+     o vídeo fique corretamente sobreposto à imagem (e nunca duplicado
+     empilhado) mesmo que o navegador esteja com uma cópia desatualizada
+     em cache do style.css externo. -->
+<style>
+  .hero-visual { position: relative; overflow: hidden; }
+  .hero-video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; opacity: 0; z-index: 1; pointer-events: none;
+    transition: opacity 0.7s ease;
+  }
+  .hero-video.is-active { opacity: 1; }
+</style>
 </head>
 <body>
 
@@ -130,7 +144,7 @@
         <div class="app-media">
           <div class="player chamfer" data-player-id="pmp">
             <img class="thumb" src="assets/thumbs/pmp-pmo-pt.png" data-i18n-src="apps.pmp.thumb" data-i18n-src-fallback="assets/thumbs/pmp-pmo-pt.png" alt="Thumbnail do vídeo de demonstração do app PMP-PMO" data-i18n-alt="apps.pmp.imgAlt" loading="lazy" />
-            <button class="play-btn" data-youtube-id="W65QfxUlFjk" data-player-id="pmp" aria-label="Reproduzir vídeo de demonstração do PMP-PMO" data-i18n-aria-label="apps.pmp.playAria">
+            <button class="play-btn" data-youtube-id="ok8kq3C-o0M" data-player-id="pmp" aria-label="Reproduzir vídeo de demonstração do PMP-PMO" data-i18n-aria-label="apps.pmp.playAria">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-pmp"></div>
@@ -310,7 +324,7 @@
         <div class="app-media">
           <div class="player chamfer" data-player-id="pcm">
             <img class="thumb" src="assets/thumbs/pcm-eam-cmms-pt.png" data-i18n-src="apps.pcm.thumb" data-i18n-src-fallback="assets/thumbs/pcm-eam-cmms-pt.png" alt="Thumbnail do vídeo de demonstração do app PCM-EAM/CMMS" data-i18n-alt="apps.pcm.imgAlt" loading="lazy" />
-            <button class="play-btn" data-youtube-id="2GV5v2Vzrms" data-player-id="pcm" aria-label="Reproduzir vídeo de demonstração do PCM-EAM/CMMS" data-i18n-aria-label="apps.pcm.playAria">
+            <button class="play-btn" data-youtube-id="9vRTFv_fJ1E" data-player-id="pcm" aria-label="Reproduzir vídeo de demonstração do PCM-EAM/CMMS" data-i18n-aria-label="apps.pcm.playAria">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-pcm"></div>
@@ -362,7 +376,7 @@
         <div class="app-media">
           <div class="player chamfer" data-player-id="bpm">
             <img class="thumb" src="assets/thumbs/bpm-cbok-pt.png" data-i18n-src="apps.bpm.thumb" data-i18n-src-fallback="assets/thumbs/bpm-cbok-pt.png" alt="Thumbnail do vídeo de demonstração do app BPM-CBOK" data-i18n-alt="apps.bpm.imgAlt" loading="lazy" />
-            <button class="play-btn" data-youtube-id="h0bfmqRq560" data-player-id="bpm" aria-label="Reproduzir vídeo de demonstração do BPM-CBOK" data-i18n-aria-label="apps.bpm.playAria">
+            <button class="play-btn" data-youtube-id="dwu5n_ZHtZI" data-player-id="bpm" aria-label="Reproduzir vídeo de demonstração do BPM-CBOK" data-i18n-aria-label="apps.bpm.playAria">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-bpm"></div>
@@ -415,7 +429,7 @@
         <div class="app-media">
           <div class="player chamfer" data-player-id="lss">
             <img class="thumb" src="assets/thumbs/lean-six-sigma-pt.jpg" data-i18n-src="apps.lss.thumb" data-i18n-src-fallback="assets/thumbs/lean-six-sigma-pt.jpg" alt="Thumbnail do vídeo de demonstração do app Lean Six Sigma + Lean Manufacturing" data-i18n-alt="apps.lss.imgAlt" loading="lazy" />
-            <button class="play-btn" data-youtube-id="t3LMrxSDYAM" data-player-id="lss" aria-label="Reproduzir vídeo de demonstração do Lean Six Sigma" data-i18n-aria-label="apps.lss.playAria">
+            <button class="play-btn" data-youtube-id="94qMtBLPQBk" data-player-id="lss" aria-label="Reproduzir vídeo de demonstração do Lean Six Sigma" data-i18n-aria-label="apps.lss.playAria">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-lss"></div>
@@ -468,7 +482,7 @@
         <div class="app-media">
           <div class="player chamfer" data-player-id="sst">
             <img class="thumb" src="assets/thumbs/sst-sgg-pt.png" data-i18n-src="apps.sst.thumb" data-i18n-src-fallback="assets/thumbs/sst-sgg-pt.png" alt="Thumbnail do vídeo de demonstração do app SST-SGG" data-i18n-alt="apps.sst.imgAlt" loading="lazy" />
-            <button class="play-btn" data-youtube-id="1E9jZsL3GXA" data-player-id="sst" aria-label="Reproduzir vídeo de demonstração do SST-SGG" data-i18n-aria-label="apps.sst.playAria">
+            <button class="play-btn" data-youtube-id="JsavxNBZWLM" data-player-id="sst" aria-label="Reproduzir vídeo de demonstração do SST-SGG" data-i18n-aria-label="apps.sst.playAria">
               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
             <div class="yt-target" id="yt-target-sst"></div>
@@ -812,8 +826,8 @@
   <span data-i18n="pwa.install">Instalar app</span>
 </button>
 
-<script src="js/main.js"></script>
-<script src="js/i18n.js"></script>
+<script src="js/main.js?v=2"></script>
+<script src="js/i18n.js?v=2"></script>
 <script>
   // registro do service worker — habilita instalação como app no Android
   // e cache básico dos assets estáticos (não interfere no gate/token)
