@@ -108,6 +108,17 @@
       { id: 'f6', question: 'Posso retirar no local?', answer: 'Pode sim! Escolha "Retirada" no checkout — seu pedido fica pronto no balcão, sem taxa de entrega.' },
     ],
   });
+  // Rede de segurança: navegadores que já tinham "admin_settings" salvo de antes de um
+  // campo novo ser adicionado (como aconteceu com howItWorks) ficam sem esse campo, já
+  // que loadJSON usa o que está salvo por inteiro em vez de completar com o padrão. Isso
+  // preenche qualquer campo que ainda esteja faltando, sem sobrescrever o que já existe.
+  if (!Array.isArray(settings.howItWorks) || !settings.howItWorks.length) {
+    settings.howItWorks = [
+      { title: 'Escolha', description: 'Monte seu pedido no cardápio, com todos os adicionais do jeito que você gosta.' },
+      { title: 'Informe onde', description: 'Escolha entrega ou retirada, e conte pra gente onde encontrar você.' },
+      { title: 'A brasa faz o resto', description: 'Seu pedido vai direto pra grelha e chega quentinho, no seu tempo.' },
+    ];
+  }
   let currentView = 'visao-geral';
   let currentDrawerOrder = null;
   let editingProductId = null;
