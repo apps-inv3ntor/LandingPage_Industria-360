@@ -1,1382 +1,1042 @@
-/* ============================================================
-   BRASA BURGER CO. — Lógica da aplicação
-   ============================================================ */
 (function () {
-  'use strict';
+  "use strict";
 
-  /* ---------------- Estado ---------------- */
-  let cart = loadJSON('brasa_cart', []); // [{lineId, productId, qty, selections:{groupId:[optionIds]}, obs, unitPrice}]
-  let appliedCoupon = loadJSON('brasa_coupon', null);
-  let activeCategory = 'todos';
-  let currentProduct = null; // produto aberto no modal
-  let currentSelections = {};
-  let currentQty = 1;
-  let checkoutStep = 1;
-  let checkoutData = loadJSON('brasa_checkout_draft', { nome: '', telefone: '', email: '', modo: 'entrega', area: 'centro', bairro: '', cep: '', endereco: '', referencia: '', pagamento: 'pix', troco: '', areaValidated: false, deliveryFeeOverride: null, idempotencyKey: null });
-  let lastOrder = loadJSON('brasa_last_order', null);
-  let authUser = loadJSON('brasa_auth', null); // {name, email} ou null
-  let quickAccessTab = 'entrar';
-  let accountModalTab = 'entrar';
-  let trackFoundOrder = false;
+  /* =================================================================
+     0) TELEMETRIA (opcional, gratuita — Google Apps Script + Sheets)
+     Cole aqui a URL /exec gerada ao implantar o apps_script_telemetria.gs
+     como Web App. Enquanto estiver vazia, nada é enviado (sem erro).
+     ================================================================= */
 
-  /* ---------------- Utilidades ---------------- */
-  function loadJSON(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) { return fallback; }
-  }
-  function saveJSON(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* silencioso */ }
-  }
-  function formatBRL(v) {
-    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
-  function findProduct(id) { return PRODUCTS.find(p => p.id === id); }
-  function uid() { return 'l' + Math.random().toString(36).slice(2, 10); }
+  const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbxxfcpQ_QtbzzKhYNDbINB3cfd3PiPqALCIsg1ASMbmUm15o9khYy4rOFxL41eKDwCW/exec";
 
-  function showToast(message, type) {
-    const stack = document.getElementById('toastStack');
-    const el = document.createElement('div');
-    el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
-    el.textContent = message;
-    stack.appendChild(el);
-    setTimeout(() => el.remove(), 3200);
-  }
+  const TELEMETRY_SESSION_KEY = "i360_session_id";
+  const TELEMETRY_GEO_KEY = "i360_geo";
+  const TELEMETRY_TOKEN_KEY = "i360_token_used";
+  let telemetryGeo = null;
+  let telemetryToken = "";
+  const pageLoadedAt = Date.now();
 
-  /* ---------------- Cálculo de preço de item ---------------- */
-  function computeUnitPrice(product, selections) {
-    let total = product.price;
-    const extraNames = (selections && selections.extras) || [];
-    extraNames.forEach(name => {
-      const ex = (product.extras || []).find(e => e.name === name);
-      if (ex) total += ex.price;
-    });
-    return total;
-  }
-
-  function cartLineTotal(line) {
-    return line.unitPrice * line.qty;
-  }
-
-  function cartSubtotal() {
-    return cart.reduce((sum, l) => sum + cartLineTotal(l), 0);
-  }
-
-  function currentDeliveryFee() {
-    if (checkoutData.modo === 'retirada') return 0;
-    if (checkoutData.deliveryFeeOverride !== null && checkoutData.deliveryFeeOverride !== undefined) return checkoutData.deliveryFeeOverride;
-    const area = DELIVERY_AREAS.find(a => a.id === checkoutData.area);
-    return area ? area.fee : 0;
-  }
-
-  function discountAmount(subtotal) {
-    if (!appliedCoupon) return 0;
-    const coupon = COUPONS[appliedCoupon];
-    if (!coupon) return 0;
-    // Cupom só vale a partir do pedido mínimo dele — reforçado aqui (não só no momento de
-    // aplicar) porque o carrinho pode mudar depois (ex: cliente remove item e fica abaixo do mínimo)
-    if (coupon.minOrder && subtotal < coupon.minOrder) return 0;
-    if (coupon.type === 'percent') return subtotal * (coupon.value / 100);
-    return coupon.value;
-  }
-
-  /* ============================================================
-     RENDER: MENU
-     ============================================================ */
-  function renderMenu() {
-    const root = document.getElementById('menuRoot');
-    let html = '';
-
-    if (activeCategory === 'todos') {
-      // Home: "Mais pedidos" é fixo (produtos em destaque). As outras duas faixas são
-      // configuráveis pelo admin em Configurações → Página inicial (título + categorias).
-      const highlights = PRODUCTS.filter(p => p.highlight);
-      const homeSections = window.HOME_SECTIONS || {
-        section2: { title: 'Hambúrgueres', categoryIds: ['hamburgueres'] },
-        section3: { title: 'Combos & Acompanhamentos', categoryIds: ['combos', 'porcoes', 'bebidas', 'sobremesas'] },
-      };
-      const section2Items = PRODUCTS.filter(p => homeSections.section2.categoryIds.includes(p.category));
-      const section3Items = PRODUCTS.filter(p => homeSections.section3.categoryIds.includes(p.category));
-
-      html += carouselSection('home-secao-2', homeSections.section2.title, section2Items);
-      html += carouselSection('home-secao-3', homeSections.section3.title, section3Items);
-      html += carouselSection('mais-pedidos', 'Mais pedidos', highlights);
-    } else if (activeCategory === 'mais-pedidos') {
-      html += gridSection('mais-pedidos', 'Mais pedidos', PRODUCTS.filter(p => p.highlight));
-    } else {
-      const items = PRODUCTS.filter(p => p.category === activeCategory);
-      html += gridSection(activeCategory, CATEGORY_LABELS[activeCategory], items);
+  function getSessionId() {
+    let id = sessionStorage.getItem(TELEMETRY_SESSION_KEY);
+    if (!id) {
+      id = "s_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+      sessionStorage.setItem(TELEMETRY_SESSION_KEY, id);
     }
-
-    if (!html) {
-      html = `<div class="empty-state"><h3>Nenhum item nessa categoria</h3><p>Escolha outra categoria no menu acima.</p></div>`;
-    }
-    root.innerHTML = html;
-
-    root.querySelectorAll('.product-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('[data-quickadd]')) return;
-        openProductModal(card.dataset.product);
-      });
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') openProductModal(card.dataset.product);
-      });
-    });
-    root.querySelectorAll('[data-quickadd]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const product = findProduct(btn.dataset.quickadd);
-        if (!product) return;
-        addToCart(product, {}, 1, '');
-        showToast(`${product.name} adicionado ao carrinho`);
-        pulseCartIcon();
-      });
-    });
-
-    bindCarouselArrows(root);
+    return id;
   }
 
-  function carouselSection(id, label, items) {
-    if (!items.length) return '';
-    return `
-      <div class="section-head" id="sec-${id}">
-        <h2>${label}</h2>
-        <div class="section-head__actions">
-          <span class="count">${items.length} itens</span>
-          <div class="carousel-arrows" data-carousel-arrows="${id}">
-            <button class="carousel-arrow" data-scroll="-1" aria-label="Anterior">‹</button>
-            <button class="carousel-arrow" data-scroll="1" aria-label="Próximo">›</button>
-          </div>
-        </div>
-      </div>
-      <div class="product-carousel" id="carousel-${id}">${items.map(renderCard).join('')}</div>`;
-  }
-
-  function gridSection(id, label, items) {
-    if (!items.length) return '';
-    return `
-      <div class="section-head" id="sec-${id}"><h2>${label}</h2><span class="count">${items.length} itens</span></div>
-      <div class="product-grid">${items.map(renderCard).join('')}</div>`;
-  }
-
-  function renderCard(p) {
-    return `
-      <article class="product-card" data-product="${p.id}" tabindex="0" role="button" aria-label="Ver ${p.name}">
-        <div class="product-card__img">
-          ${p.highlight ? '<span class="badge-highlight">Mais pedido</span>' : ''}
-          <img src="${p.img}" alt="${p.name}" loading="lazy">
-        </div>
-        <div class="product-card__body">
-          <h3>${p.name}</h3>
-          <p>${p.desc}</p>
-          <div class="product-card__footer">
-            <span class="price">${formatBRL(p.price)}</span>
-            <button class="add-btn" data-quickadd="${p.id}" aria-label="Adicionar ${p.name} rapidamente">+</button>
-          </div>
-        </div>
-      </article>`;
-  }
-
-  function bindCarouselArrows(root) {
-    root.querySelectorAll('[data-carousel-arrows]').forEach(group => {
-      const id = group.dataset.carouselArrows;
-      const track = document.getElementById(`carousel-${id}`);
-      if (!track) return;
-      const prevBtn = group.querySelector('[data-scroll="-1"]');
-      const nextBtn = group.querySelector('[data-scroll="1"]');
-      function updateArrows() {
-        prevBtn.disabled = track.scrollLeft <= 4;
-        nextBtn.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
-      }
-      function scrollByCards(dir) {
-        const card = track.querySelector('.product-card');
-        const cardWidth = card ? card.getBoundingClientRect().width + 18 : 260;
-        track.scrollBy({ left: dir * cardWidth * 2, behavior: 'smooth' });
-      }
-      prevBtn.addEventListener('click', () => scrollByCards(-1));
-      nextBtn.addEventListener('click', () => scrollByCards(1));
-      track.addEventListener('scroll', updateArrows);
-      updateArrows();
-    });
-  }
-
-  function pulseCartIcon() {
-    const btn = document.getElementById('openCartBtn');
-    btn.style.transform = 'scale(1.15)';
-    setTimeout(() => { btn.style.transform = ''; }, 180);
-  }
-
-  /* ============================================================
-     MODAL DE PRODUTO
-     ============================================================ */
-  function openProductModal(productId) {
-    currentProduct = findProduct(productId);
-    currentSelections = { extras: [], remove: [] };
-    currentQty = 1;
-    renderProductModal();
-    openOverlay('productModal');
-  }
-
-  function renderProductModal() {
-    const p = currentProduct;
-    const extras = p.extras || [];
-    const removeOptions = p.removeOptions || [];
-
-    let extrasHtml = '';
-    if (extras.length) {
-      extrasHtml = `<div class="option-group">
-        <div class="option-group__head"><h4>Adicionais</h4><span class="option-group__hint">Opcional</span></div>
-        ${extras.map((ex, i) => `
-          <label class="option-row">
-            <span><input type="checkbox" data-extra="${i}"> ${ex.name}</span>
-            <span class="opt-price">+ ${formatBRL(ex.price)}</span>
-          </label>`).join('')}
-      </div>`;
-    }
-
-    let removeHtml = '';
-    if (removeOptions.length) {
-      removeHtml = `<div class="option-group">
-        <div class="option-group__head"><h4>Quer tirar algo?</h4><span class="option-group__hint">Opcional</span></div>
-        ${removeOptions.map((name, i) => `
-          <label class="option-row">
-            <span><input type="checkbox" data-remove="${i}"> ${name}</span>
-          </label>`).join('')}
-      </div>`;
-    }
-
-    document.getElementById('productModalContent').innerHTML = `
-      <div class="modal__img">
-        <img src="${p.img}" alt="${p.name}">
-        <button class="modal__close" id="closeProductModal" aria-label="Fechar">✕</button>
-      </div>
-      <div class="modal__body">
-        <h2>${p.name}</h2>
-        <p class="ingredients">${p.ingredients}</p>
-        <div class="modal__price" id="modalUnitPrice">${formatBRL(computeUnitPrice(p, currentSelections))}</div>
-        ${extrasHtml}
-        ${removeHtml}
-        <div class="option-group">
-          <div class="option-group__head"><h4>Observação</h4><span class="option-group__hint">Opcional</span></div>
-          <textarea class="obs-field" id="obsField" placeholder="Ex: cortar ao meio, molho à parte..." maxlength="140"></textarea>
-        </div>
-        <div class="modal__footer">
-          <div class="qty-control" style="padding:8px 10px;">
-            <button id="qtyMinus" aria-label="Diminuir quantidade">−</button>
-            <span id="qtyValue" style="min-width:18px; text-align:center;">1</span>
-            <button id="qtyPlus" aria-label="Aumentar quantidade">+</button>
-          </div>
-          <button class="btn btn-primary" id="addToCartBtn" style="flex:1; justify-content:center;">Adicionar · ${formatBRL(computeUnitPrice(p, currentSelections))}</button>
-        </div>
-      </div>`;
-
-    document.getElementById('closeProductModal').addEventListener('click', closeAllOverlays);
-
-    document.querySelectorAll('#productModalContent [data-extra]').forEach(input => {
-      input.addEventListener('change', () => {
-        const idx = parseInt(input.dataset.extra, 10);
-        const name = extras[idx].name;
-        if (input.checked) currentSelections.extras.push(name);
-        else currentSelections.extras = currentSelections.extras.filter(n => n !== name);
-        updateModalPrice();
-      });
-    });
-    document.querySelectorAll('#productModalContent [data-remove]').forEach(input => {
-      input.addEventListener('change', () => {
-        const idx = parseInt(input.dataset.remove, 10);
-        const name = removeOptions[idx];
-        if (input.checked) currentSelections.remove.push(name);
-        else currentSelections.remove = currentSelections.remove.filter(n => n !== name);
-      });
-    });
-
-    document.getElementById('qtyMinus').addEventListener('click', () => {
-      if (currentQty > 1) { currentQty--; updateModalQty(); }
-    });
-    document.getElementById('qtyPlus').addEventListener('click', () => {
-      currentQty++; updateModalQty();
-    });
-    document.getElementById('addToCartBtn').addEventListener('click', () => {
-      const obs = document.getElementById('obsField').value.trim();
-      addToCart(p, currentSelections, currentQty, obs);
-      showToast(`${p.name} adicionado ao carrinho`);
-      closeAllOverlays();
-      pulseCartIcon();
-    });
-  }
-
-  function updateModalPrice() {
-    const unit = computeUnitPrice(currentProduct, currentSelections);
-    document.getElementById('modalUnitPrice').textContent = formatBRL(unit);
-    document.getElementById('addToCartBtn').textContent = `Adicionar · ${formatBRL(unit * currentQty)}`;
-  }
-  function updateModalQty() {
-    document.getElementById('qtyValue').textContent = currentQty;
-    updateModalPrice();
-  }
-
-  /* ============================================================
-     CARRINHO
-     ============================================================ */
-  function addToCart(product, selections, qty, obs) {
-    const unitPrice = computeUnitPrice(product, selections);
-    cart.push({
-      lineId: uid(),
-      productId: product.id,
-      qty,
-      selections: JSON.parse(JSON.stringify(selections)),
-      obs,
-      unitPrice,
-    });
-    persistCart();
-    renderCart();
-  }
-
-  function removeLine(lineId) {
-    cart = cart.filter(l => l.lineId !== lineId);
-    persistCart();
-    renderCart();
-  }
-
-  function changeQty(lineId, delta) {
-    const line = cart.find(l => l.lineId === lineId);
-    if (!line) return;
-    line.qty += delta;
-    if (line.qty <= 0) { removeLine(lineId); return; }
-    persistCart();
-    renderCart();
-  }
-
-  function persistCart() { saveJSON('brasa_cart', cart); }
-
-  function describeSelections(line) {
-    if (!line.selections) return '';
-    const parts = [];
-    (line.selections.extras || []).forEach(name => parts.push('+ ' + name));
-    (line.selections.remove || []).forEach(name => parts.push(name));
-    return parts.join(', ');
-  }
-
-  function renderCart() {
-    const itemsEl = document.getElementById('cartItems');
-    const summaryEl = document.getElementById('cartSummary');
-    const couponAreaEl = document.getElementById('couponArea');
-    const countEl = document.getElementById('cartCount');
-    const mobileBar = document.getElementById('mobileCartBar');
-    const mobileCount = document.getElementById('mobileCartCount');
-    const mobileTotal = document.getElementById('mobileCartTotal');
-
-    renderQuickAccess();
-
-    const totalQty = cart.reduce((s, l) => s + l.qty, 0);
-    countEl.textContent = totalQty;
-    countEl.hidden = totalQty === 0;
-    mobileCount.textContent = totalQty;
-
-    if (!cart.length) {
-      itemsEl.innerHTML = `
-        <div class="cart-empty">Sua sacola está vazia.<br>Que tal um Brasa Bacon pra começar? 🔥</div>
-        <button class="btn btn-secondary" id="continueShoppingBtn" style="width:100%; justify-content:center;">← Continuar comprando</button>`;
-      couponAreaEl.innerHTML = '';
-      summaryEl.innerHTML = '';
-      document.getElementById('inlineCheckoutArea').innerHTML = '';
-      mobileBar.classList.remove('is-visible');
-      document.getElementById('continueShoppingBtn').addEventListener('click', closeAllOverlays);
-      return;
-    }
-
-    mobileBar.classList.add('is-visible');
-
-    itemsEl.innerHTML = cart.map(line => {
-      const product = findProduct(line.productId);
-      if (!product) return ''; // item órfão (produto não existe mais) — ignora em vez de travar a página
-      const desc = describeSelections(line);
-      return `
-        <div class="cart-item">
-          <img src="${product.img}" alt="${product.name}">
-          <div>
-            <h4>${product.name}</h4>
-            ${desc ? `<div class="obs">${escapeHtmlLite(desc)}</div>` : ''}
-            ${line.obs ? `<div class="obs">Obs: ${escapeHtmlLite(line.obs)}</div>` : ''}
-            <div class="qty-control">
-              <button data-qty-minus="${line.lineId}" aria-label="Diminuir">−</button>
-              <span>${line.qty}</span>
-              <button data-qty-plus="${line.lineId}" aria-label="Aumentar">+</button>
-            </div>
-          </div>
-          <div style="text-align:right;">
-            <div class="cart-item__price">${formatBRL(cartLineTotal(line))}</div>
-            <button class="remove-line" data-remove="${line.lineId}">remover</button>
-          </div>
-        </div>`;
-    }).join('');
-
-    itemsEl.querySelectorAll('[data-qty-minus]').forEach(b => b.addEventListener('click', () => changeQty(b.dataset.qtyMinus, -1)));
-    itemsEl.querySelectorAll('[data-qty-plus]').forEach(b => b.addEventListener('click', () => changeQty(b.dataset.qtyPlus, 1)));
-    itemsEl.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeLine(b.dataset.remove)));
-
-    const subtotal = cartSubtotal();
-    const discount = discountAmount(subtotal);
-    const fee = currentDeliveryFee();
-    const total = Math.max(0, subtotal - discount) + fee;
-    mobileTotal.textContent = formatBRL(total);
-
-    if (appliedCoupon) {
-      couponAreaEl.innerHTML = `<div class="coupon-applied"><span>Cupom <strong>${appliedCoupon}</strong> aplicado</span><button id="removeCouponBtn">remover</button></div>`;
-      document.getElementById('removeCouponBtn').addEventListener('click', () => {
-        appliedCoupon = null;
-        saveJSON('brasa_coupon', null);
-        renderCart();
-        showToast('Cupom removido');
-      });
-    } else {
-      couponAreaEl.innerHTML = `
-        <div class="coupon-row">
-          <input type="text" id="couponInput" placeholder="Cupom de desconto" maxlength="20">
-          <button id="applyCouponBtn">Aplicar</button>
-        </div>`;
-      document.getElementById('applyCouponBtn').addEventListener('click', applyCoupon);
-      document.getElementById('couponInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') applyCoupon(); });
-    }
-
-    summaryEl.innerHTML = `
-      <div class="summary-row"><span>Subtotal</span><span>${formatBRL(subtotal)}</span></div>
-      ${discount > 0 ? `<div class="summary-row discount"><span>Desconto</span><span>− ${formatBRL(discount)}</span></div>` : ''}
-      <div class="summary-row"><span>Taxa de entrega</span><span>${fee > 0 ? formatBRL(fee) : 'A calcular'}</span></div>
-      <div class="summary-row total"><span>Total</span><span>${formatBRL(total)}</span></div>
-      ${subtotal < MIN_ORDER ? `<div class="checkout-locked" style="margin-top:14px;">Pedido mínimo ${formatBRL(MIN_ORDER)}</div>` : `
-      <button class="btn btn-primary" id="goCheckoutBtn" style="width:100%; justify-content:center; margin-top:14px;">Finalizar pedido</button>`}`;
-
-    const goBtn = document.getElementById('goCheckoutBtn');
-    if (goBtn) {
-      goBtn.addEventListener('click', () => {
-        checkoutStep = 1;
-        renderInlineCheckout();
-        document.getElementById('inlineCheckoutBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-
-    renderInlineCheckout();
-  }
-
-  async function applyCoupon() {
-    const input = document.getElementById('couponInput');
-    const code = input.value.trim().toUpperCase();
-    if (!code) return;
-
-    // Sempre que o Supabase estiver conectado, valida no banco via validate_coupon —
-    // é a função que já existia pronta pra isso (checa ativo/expirado/limite/pedido mínimo
-    // no servidor, então não dá pra burlar mudando algo no navegador).
-    if (window.SUPABASE_READY) {
-      const { data, error } = await window.sb.rpc('validate_coupon', { p_code: code, p_subtotal: cartSubtotal() });
-      const result = data && data[0];
-      if (error || !result) { showToast('Não foi possível validar o cupom agora, tente de novo.', 'error'); return; }
-      if (!result.valid) { showToast(result.reason || 'Cupom inválido ou expirado', 'error'); return; }
-      // Guarda a versão local (com minOrder etc., vinda do site-sync) se já existir, senão monta
-      // uma a partir do que o RPC devolveu — pra discountAmount() continuar sabendo o pedido mínimo
-      // se o carrinho mudar depois de aplicar.
-      const label = result.type === 'percent' ? `${result.value}% OFF` : result.type === 'fixed' ? `R$ ${Number(result.value).toFixed(2)} OFF` : 'Frete grátis';
-      COUPONS[code] = Object.assign({ type: result.type, value: Number(result.value), label }, COUPONS[code]);
-      appliedCoupon = code;
-      saveJSON('brasa_coupon', code);
-      renderCart();
-      showToast(`Cupom ${code} aplicado — ${label}`);
-      return;
-    }
-
-    // Modo demonstração (sem Supabase conectado) — usa a lista local de exemplo.
-    const coupon = COUPONS[code];
-    if (!coupon) { showToast('Cupom inválido ou expirado', 'error'); return; }
-    if (coupon.minOrder && cartSubtotal() < coupon.minOrder) {
-      showToast(`Esse cupom vale a partir de ${formatBRL(coupon.minOrder)} em pedidos`, 'error');
-      return;
-    }
-    appliedCoupon = code;
-    saveJSON('brasa_coupon', code);
-    renderCart();
-    showToast(`Cupom ${code} aplicado — ${coupon.label}`);
-  }
-
-  /* ============================================================
-     ACESSO RÁPIDO (login/cadastro embutido na sacola)
-     ============================================================ */
-  function initials(name) {
-    return (name || '').trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?';
-  }
-
-  function renderQuickAccess() {
-    const area = document.getElementById('quickAccessArea');
-    if (!area) return;
-    area.innerHTML = ''; // removido: era decorativo, não autenticava de verdade — confundia clientes
-    return;
-    /* eslint-disable no-unreachable */
-    if (authUser) {
-      area.innerHTML = `
-        <div class="quick-access-signed-in">
-          <div class="who"><div class="avatar-initials">${initials(authUser.name)}</div><span>${escapeHtmlLite(authUser.name)}</span></div>
-          <button id="qaLogoutBtn">Sair</button>
-        </div>`;
-      document.getElementById('qaLogoutBtn').addEventListener('click', () => {
-        authUser = null;
-        saveJSON('brasa_auth', null);
-        renderQuickAccess();
-        showToast('Você saiu da sua conta');
-      });
-      return;
-    }
-    area.innerHTML = `
-      <div class="quick-access">
-        <span class="quick-access__eyebrow">Acesso rápido</span>
-        <h3 id="qaTitle">Acesse sua conta</h3>
-        <div class="mode-toggle" id="qaTabs">
-          <button data-qatab="entrar" class="${quickAccessTab === 'entrar' ? 'is-active' : ''}">Entrar</button>
-          <button data-qatab="cadastrar" class="${quickAccessTab === 'cadastrar' ? 'is-active' : ''}">Cadastrar</button>
-        </div>
-        <div id="qaFormArea"></div>
-      </div>`;
-    document.querySelectorAll('#qaTabs [data-qatab]').forEach(b => b.addEventListener('click', () => {
-      quickAccessTab = b.dataset.qatab;
-      renderQuickAccess();
-    }));
-    renderQaForm();
-  }
-
-  function renderQaForm() {
-    const wrap = document.getElementById('qaFormArea');
-    const title = document.getElementById('qaTitle');
-    if (quickAccessTab === 'entrar') {
-      title.textContent = 'Acesse sua conta';
-      wrap.innerHTML = `
-        <div class="field"><label>E-mail</label><input type="email" id="qaEmail" placeholder="voce@email.com"></div>
-        <div class="field"><label>Senha</label><input type="password" id="qaPass" placeholder="Sua senha"></div>
-        <button class="btn btn-primary" id="qaSubmit" style="width:100%; justify-content:center;">Entrar</button>
-        <p class="field-hint" style="margin-top:10px;">Use seu e-mail e senha para entrar.</p>`;
-      document.getElementById('qaSubmit').addEventListener('click', () => {
-        const email = document.getElementById('qaEmail').value.trim();
-        if (!email.includes('@')) { showToast('Digite um e-mail válido', 'error'); return; }
-        authUser = { name: email.split('@')[0], email };
-        saveJSON('brasa_auth', authUser);
-        renderQuickAccess();
-        showToast('Login realizado com sucesso');
-      });
-    } else {
-      title.textContent = 'Crie sua conta';
-      wrap.innerHTML = `
-        <div class="field"><label>Nome</label><input type="text" id="qaName" placeholder="Seu nome"></div>
-        <div class="field"><label>WhatsApp</label><input type="tel" id="qaWhats" placeholder="(11) 90000-0000"></div>
-        <div class="field"><label>E-mail</label><input type="email" id="qaEmail2" placeholder="voce@email.com"></div>
-        <div class="field"><label>Senha</label><input type="password" id="qaPass2" placeholder="Mínimo de 10 caracteres"></div>
-        <button class="btn btn-primary" id="qaSubmit2" style="width:100%; justify-content:center;">Cadastrar</button>
-        <p class="field-hint" style="margin-top:10px;">Preencha nome, WhatsApp, e-mail e uma senha de 10 caracteres.</p>`;
-      document.getElementById('qaSubmit2').addEventListener('click', () => {
-        const name = document.getElementById('qaName').value.trim();
-        const email = document.getElementById('qaEmail2').value.trim();
-        const pass = document.getElementById('qaPass2').value;
-        if (!name) { showToast('Digite seu nome', 'error'); return; }
-        if (!email.includes('@')) { showToast('Digite um e-mail válido', 'error'); return; }
-        if (pass.length < 10) { showToast('A senha precisa ter no mínimo 10 caracteres', 'error'); return; }
-        authUser = { name, email };
-        saveJSON('brasa_auth', authUser);
-        renderQuickAccess();
-        showToast('Conta criada com sucesso');
-      });
-    }
-  }
-
-  function escapeHtmlLite(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-
-  /* ============================================================
-     CHECKOUT EMBUTIDO NA SACOLA (3 etapas: Pedido / Endereço / Pagamento)
-     ============================================================ */
-  function persistCheckoutDraft() { saveJSON('brasa_checkout_draft', checkoutData); }
-
-  function renderInlineCheckout() {
-    const area = document.getElementById('inlineCheckoutArea');
-    if (!area) return;
-    const subtotal = cartSubtotal();
-    if (!cart.length) { area.innerHTML = ''; return; }
-    if (subtotal < MIN_ORDER) {
-      area.innerHTML = `<div class="inline-checkout"><div class="checkout-locked">Faltam ${formatBRL(MIN_ORDER - subtotal)} para o pedido mínimo de ${formatBRL(MIN_ORDER)}.</div></div>`;
-      return;
-    }
-    area.innerHTML = `
-      <div class="inline-checkout" id="inlineCheckoutBox">
-        <span class="inline-checkout__eyebrow">Finalizar pedido</span>
-        <h3>Fechar pedido</h3>
-        <div class="checkout-steps">${[1, 2, 3].map(n =>
-          `<div class="step ${n < checkoutStep ? 'is-done' : ''} ${n === checkoutStep ? 'is-active' : ''}"></div>`).join('')}</div>
-        <div id="checkoutStepBody"></div>
-      </div>`;
-    renderCheckoutStepBody();
-  }
-
-  function renderCheckoutStepBody() {
-    const body = document.getElementById('checkoutStepBody');
-    if (!body) return;
-    if (checkoutStep === 1) body.innerHTML = stepPedido();
-    if (checkoutStep === 2) body.innerHTML = stepEndereco();
-    if (checkoutStep === 3) body.innerHTML = stepPagamentoFinal();
-    bindCheckoutEvents();
-  }
-
-  function stepPedido() {
-    return `
-      <div class="field">
-        <label for="inpNome">Nome completo</label>
-        <input type="text" id="inpNome" value="${escapeHtmlLite(checkoutData.nome)}" placeholder="Como podemos te chamar?">
-        <div class="field-error-msg" id="errNome">Digite seu nome.</div>
-      </div>
-      <div class="field">
-        <label for="inpTelefone">WhatsApp</label>
-        <input type="tel" id="inpTelefone" value="${escapeHtmlLite(checkoutData.telefone)}" placeholder="(11) 90000-0000">
-        <div class="field-error-msg" id="errTelefone">Digite um telefone válido.</div>
-      </div>
-      <div class="field">
-        <label for="inpEmail">E-mail</label>
-        <input type="email" id="inpEmail" value="${escapeHtmlLite(checkoutData.email)}" placeholder="voce@email.com">
-        <div class="field-error-msg" id="errEmail">Digite um e-mail válido — você vai usar ele para acompanhar o pedido.</div>
-      </div>
-      <div class="checkout-nav" style="justify-content:flex-end;">
-        <button class="btn btn-primary" id="nextStepBtn">Continuar</button>
-      </div>`;
-  }
-
-  function stepEndereco() {
-    const isEntrega = checkoutData.modo === 'entrega';
-    return `
-      <div class="mode-toggle">
-        <button data-mode="entrega" class="${isEntrega ? 'is-active' : ''}">Entrega</button>
-        <button data-mode="retirada" class="${!isEntrega ? 'is-active' : ''}">Retirada no balcão</button>
-      </div>
-      ${isEntrega ? `
-        <div class="field">
-          <label for="inpEndereco">Endereço completo (rua, número, complemento)</label>
-          <input type="text" id="inpEndereco" value="${escapeHtmlLite(checkoutData.endereco)}" placeholder="Rua, número, complemento">
-          <div class="field-error-msg" id="errEndereco">Digite o endereço de entrega.</div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label for="inpBairro">Bairro</label><input type="text" id="inpBairro" value="${escapeHtmlLite(checkoutData.bairro)}" placeholder="Ex: Centro"></div>
-          <div class="field"><label for="inpCep">CEP</label><input type="text" id="inpCep" value="${escapeHtmlLite(checkoutData.cep)}" placeholder="00000-000"></div>
-        </div>
-        <div class="field">
-          <label for="inpReferencia">Ponto de referência (opcional)</label>
-          <input type="text" id="inpReferencia" value="${escapeHtmlLite(checkoutData.referencia)}" placeholder="Ex: perto da praça">
-        </div>
-        <button class="btn btn-secondary" id="checkAreaBtn" type="button" style="width:100%; margin-bottom:10px;">📍 Verificar disponibilidade</button>
-        <div id="areaCheckResult" style="margin-bottom:14px; font-size:0.88rem;">
-          ${checkoutData.areaValidated ? `<div class="checkout-locked" style="background:rgba(63,174,107,0.14); color:var(--green,#3fae6b); border-color:transparent;">✅ Atendemos sua localidade!</div>` : ''}
-        </div>` : `
-        <div class="field"><p style="color:var(--text-secondary); font-size:0.88rem;">Retirada em Rua das Brasas, 147 — Centro. Pronto em até 30 minutos.</p></div>`}
-      <div class="checkout-nav">
-        <button class="btn btn-secondary" id="prevStepBtn">Voltar</button>
-        <button class="btn btn-primary" id="nextStepBtn" ${isEntrega && !checkoutData.areaValidated ? 'disabled' : ''}>Continuar</button>
-      </div>`;
-  }
-
-  async function checkDeliveryAvailability() {
-    const endereco = document.getElementById('inpEndereco').value.trim();
-    const bairro = document.getElementById('inpBairro').value.trim();
-    const cep = document.getElementById('inpCep').value.trim();
-    const resultBox = document.getElementById('areaCheckResult');
-    const checkBtn = document.getElementById('checkAreaBtn');
-    if (!endereco || !bairro) {
-      resultBox.innerHTML = `<div class="checkout-locked">Preencha o endereço e o bairro antes de verificar.</div>`;
-      return;
-    }
-    checkoutData.endereco = endereco; checkoutData.bairro = bairro; checkoutData.cep = cep;
-    checkBtn.disabled = true;
-    checkBtn.textContent = 'Verificando...';
-    resultBox.innerHTML = `<div class="muted">Verificando disponibilidade...</div>`;
-    try {
-      if (!window.SUPABASE_READY) throw new Error('offline');
-      const { data, error } = await window.sb.functions.invoke('validate-delivery-address', {
-        body: { street: endereco, neighborhood: bairro, cep },
-      });
-      if (error || !data || data.error) {
-        resultBox.innerHTML = `<div class="checkout-locked">Não foi possível verificar agora. Tente novamente em instantes.</div>`;
-        checkoutData.areaValidated = false;
-        return;
-      }
-      if (data.atendido) {
-        checkoutData.areaValidated = true;
-        if (data.area) { checkoutData.area = data.area.id; checkoutData.deliveryFeeOverride = null; }
-        else { checkoutData.area = null; checkoutData.deliveryFeeOverride = 0; }
-        resultBox.innerHTML = `<div class="checkout-locked" style="background:rgba(63,174,107,0.14); color:var(--green,#3fae6b); border-color:transparent;">✅ ${data.mensagem}</div>`;
-      } else {
-        checkoutData.areaValidated = false;
-        resultBox.innerHTML = `<div class="checkout-locked" style="background:rgba(220,60,60,0.14); color:#e15b5b; border-color:transparent;">${data.mensagem}</div>`;
-      }
-    } catch (e) {
-      checkoutData.areaValidated = false;
-      resultBox.innerHTML = `<div class="checkout-locked">Não foi possível verificar agora. Tente novamente em instantes.</div>`;
-    } finally {
-      checkBtn.disabled = false;
-      checkBtn.textContent = '📍 Verificar disponibilidade';
-      persistCheckoutDraft();
-      const nextBtn = document.getElementById('nextStepBtn');
-      if (nextBtn) nextBtn.disabled = !checkoutData.areaValidated;
-    }
-  }
-
-  function stepPagamentoFinal() {
-    const allOptions = [
-      { id: 'pix', label: 'Pix na entrega/retirada' },
-      { id: 'debito', label: 'Cartão de débito' },
-      { id: 'credito', label: 'Cartão de crédito' },
-      { id: 'dinheiro', label: 'Dinheiro' },
-    ];
-    const enabled = window.PAYMENTS_ENABLED || { pix: true, debito: true, credito: true, dinheiro: true };
-    const options = allOptions.filter(o => enabled[o.id] !== false);
-    const subtotal = cartSubtotal();
-    const discount = discountAmount(subtotal);
-    const fee = currentDeliveryFee();
-    const total = Math.max(0, subtotal - discount) + fee;
-    return `
-      <div class="pay-options">
-        ${options.map(o => `<label class="pay-option ${checkoutData.pagamento === o.id ? 'is-active' : ''}" data-pay="${o.id}">
-          <input type="radio" name="pay" value="${o.id}" ${checkoutData.pagamento === o.id ? 'checked' : ''} style="accent-color: var(--brasa-orange);"> ${o.label}
-        </label>`).join('')}
-      </div>
-      ${checkoutData.pagamento === 'dinheiro' ? `
-        <div class="field">
-          <label for="inpTroco">Precisa de troco para quanto?</label>
-          <input type="text" id="inpTroco" value="${escapeHtmlLite(checkoutData.troco)}" placeholder="Ex: R$ 100,00 (deixe em branco se não precisar)">
-        </div>` : ''}
-      <div class="review-block" style="margin-top:16px;">
-        <div class="summary-row"><span>Subtotal</span><span>${formatBRL(subtotal)}</span></div>
-        ${discount > 0 ? `<div class="summary-row discount"><span>Desconto</span><span>− ${formatBRL(discount)}</span></div>` : ''}
-        <div class="summary-row"><span>Taxa de entrega</span><span>${formatBRL(fee)}</span></div>
-        <div class="summary-row total"><span>Total</span><span>${formatBRL(total)}</span></div>
-      </div>
-      <div class="checkout-nav">
-        <button class="btn btn-secondary" id="prevStepBtn">Voltar</button>
-        <button class="btn btn-primary" id="confirmOrderBtn">Confirmar pedido</button>
-      </div>`;
-  }
-
-  function bindCheckoutEvents() {
-    const prev = document.getElementById('prevStepBtn');
-    const next = document.getElementById('nextStepBtn');
-    const confirm = document.getElementById('confirmOrderBtn');
-
-    if (prev) prev.addEventListener('click', () => { checkoutStep--; renderInlineCheckout(); });
-
-    if (next) next.addEventListener('click', () => {
-      if (checkoutStep === 1) {
-        const nome = document.getElementById('inpNome').value.trim();
-        const telefone = document.getElementById('inpTelefone').value.trim();
-        const email = document.getElementById('inpEmail').value.trim();
-        let valid = true;
-        toggleFieldError('inpNome', 'errNome', !nome); if (!nome) valid = false;
-        toggleFieldError('inpTelefone', 'errTelefone', telefone.length < 8); if (telefone.length < 8) valid = false;
-        toggleFieldError('inpEmail', 'errEmail', !email.includes('@')); if (!email.includes('@')) valid = false;
-        if (!valid) return;
-        checkoutData.nome = nome; checkoutData.telefone = telefone; checkoutData.email = email;
-      }
-      if (checkoutStep === 2 && checkoutData.modo === 'entrega') {
-        const endereco = document.getElementById('inpEndereco').value.trim();
-        toggleFieldError('inpEndereco', 'errEndereco', !endereco);
-        if (!endereco) return;
-        if (!checkoutData.areaValidated) { showToast('Verifique a disponibilidade de entrega antes de continuar.', 'error'); return; }
-        checkoutData.endereco = endereco;
-        checkoutData.referencia = document.getElementById('inpReferencia').value.trim();
-      }
-      persistCheckoutDraft();
-      checkoutStep++;
-      renderInlineCheckout();
-    });
-
-    if (confirm) confirm.addEventListener('click', submitOrder);
-
-    document.querySelectorAll('[data-mode]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        checkoutData.modo = btn.dataset.mode;
-        if (btn.dataset.mode === 'retirada') checkoutData.areaValidated = false;
-        persistCheckoutDraft();
-        renderInlineCheckout();
-      });
-    });
-
-    const checkAreaBtn = document.getElementById('checkAreaBtn');
-    if (checkAreaBtn) checkAreaBtn.addEventListener('click', checkDeliveryAvailability);
-
-    ['inpEndereco', 'inpBairro', 'inpCep'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('input', () => {
-        if (checkoutData.areaValidated) {
-          checkoutData.areaValidated = false;
-          const nextBtn = document.getElementById('nextStepBtn');
-          if (nextBtn) nextBtn.disabled = true;
-          const resultBox = document.getElementById('areaCheckResult');
-          if (resultBox) resultBox.innerHTML = `<div class="muted">Endereço alterado — verifique a disponibilidade de novo.</div>`;
-        }
-      });
-    });
-
-    document.querySelectorAll('[data-pay]').forEach(label => {
-      label.addEventListener('click', () => {
-        checkoutData.pagamento = label.dataset.pay;
-        persistCheckoutDraft();
-        renderCheckoutStepBody();
-      });
-    });
-  }
-
-  function toggleFieldError(inputId, errId, hasError) {
-    document.getElementById(inputId).classList.toggle('field-error', hasError);
-    document.getElementById(errId).classList.toggle('is-visible', hasError);
-  }
-
-  let orderSubmitInFlight = false; // trava simples: ignora clique duplo enquanto o pedido anterior ainda está sendo enviado
-
-  async function submitOrder() {
-    if (orderSubmitInFlight) return; // duplo clique / clique repetido enquanto já está processando
-    orderSubmitInFlight = true;
-    const confirmBtn = document.getElementById('confirmOrderBtn');
-    const subtotal = cartSubtotal();
-    const discount = discountAmount(subtotal);
-    const fee = currentDeliveryFee();
-    const total = Math.max(0, subtotal - discount) + fee;
-
-    const usesRealPayment = window.SUPABASE_READY;
-
-    if (!usesRealPayment) {
-      // Supabase ainda não configurado: fluxo local de sempre (só pra nunca travar a demonstração)
-      lastOrder = {
-        code: '#' + Math.floor(1000 + Math.random() * 9000),
-        items: cart.map(l => { const p = findProduct(l.productId); return { name: p ? p.name : 'Item', qty: l.qty }; }),
-        total,
-        createdAt: Date.now(),
-        status: 'recebido',
-        customer: checkoutData,
-      };
-      saveJSON('brasa_last_order', lastOrder);
-      cart = [];
-      appliedCoupon = null;
-      checkoutStep = 1;
-      persistCart();
-      saveJSON('brasa_coupon', null);
-      renderCart();
-      closeAllOverlays();
-      showToast('Pedido confirmado! Acompanhe abaixo.');
-      trackFoundOrder = true;
-      setTimeout(() => openTrackModal(), 260);
-      orderSubmitInFlight = false;
-      return;
-    }
-
-    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Processando...'; }
-
-    // Chave de idempotência: gerada uma vez por tentativa de checkout e reaproveitada em
-    // reenvios (falha de rede, duplo clique) — assim o backend reconhece que é a MESMA
-    // tentativa e devolve o pedido já criado em vez de duplicar. É limpa depois que o
-    // pedido é confirmado com sucesso, pra próxima compra gerar uma chave nova.
-    if (!checkoutData.idempotencyKey) {
-      checkoutData.idempotencyKey = crypto.randomUUID();
-      persistCheckoutDraft();
-    }
-
+  function sendTelemetry(evento, detalhe, tempoS) {
+    if (!TELEMETRY_URL) return;
     const payload = {
-      items: cart.map(l => ({
-        product_id: l.productId,
-        quantity: l.qty,
-        selected_extras: (l.selections && l.selections.extras) || [],
-        selected_removals: (l.selections && l.selections.remove) || [],
-        observation: l.obs || undefined,
-      })),
-      couponCode: appliedCoupon || null,
-      modality: checkoutData.modo,
-      deliveryAreaId: checkoutData.modo === 'entrega' ? checkoutData.area : null,
-      customer: { name: checkoutData.nome, email: checkoutData.email, phone: checkoutData.telefone },
-      address: checkoutData.modo === 'entrega' ? { street: checkoutData.endereco, reference: checkoutData.referencia } : undefined,
-      idempotencyKey: checkoutData.idempotencyKey,
+      token: telemetryToken,
+      session_id: getSessionId(),
+      evento: evento,
+      detalhe: detalhe || "",
+      pais: telemetryGeo ? telemetryGeo.pais : "",
+      regiao: telemetryGeo ? telemetryGeo.regiao : "",
+      cidade: telemetryGeo ? telemetryGeo.cidade : "",
+      tempo_s: tempoS || "",
     };
-
     try {
-      const fnName = checkoutData.pagamento === 'pix' ? 'create-pix-payment'
-        : checkoutData.pagamento === 'dinheiro' ? 'create-cash-order'
-        : 'create-card-payment';
-      const { data, error } = await window.sb.functions.invoke(fnName, { body: payload });
+      // no-cors: não precisamos ler a resposta, só garantir que o Apps
+      // Script recebeu e gravou a linha — evita ruído de CORS no console.
+      // keepalive: garante que a requisição tenta terminar mesmo se o
+      // visitante trocar de página logo em seguida.
+      fetch(TELEMETRY_URL, {
+        method: "POST",
+        mode: "no-cors",
+        keepalive: true,
+        headers: { "Content-Type": "text/plain" }, // texto simples evita pre-flight OPTIONS
+        body: JSON.stringify(payload),
+      });
+    } catch (err) { /* telemetria nunca deve quebrar a navegação do visitante */ }
+  }
 
-      if (error || !data || data.error) {
-        let detail = (data && data.error) || (error && error.message) || 'erro desconhecido';
-        // Quando a função responde com erro (não-2xx), o supabase-js só dá uma mensagem
-        // genérica ("non-2xx status code") — o corpo de verdade fica em error.context.
-        if (error && error.context && typeof error.context.json === 'function') {
-          try {
-            const body = await error.context.json();
-            if (body && body.error) detail = body.error;
-          } catch (_) { /* corpo não era JSON, mantém a mensagem genérica */ }
-        }
-        console.error('Erro ao gerar pagamento:', detail, error);
-        showToast('Não foi possível gerar o pagamento: ' + detail, 'error');
+  function initGeoAndTrackPageView() {
+    if (!TELEMETRY_URL) return;
+
+    const cached = sessionStorage.getItem(TELEMETRY_GEO_KEY);
+    if (cached) {
+      telemetryGeo = JSON.parse(cached);
+      sendTelemetry("page_view", location.pathname);
+      return;
+    }
+
+    fetch("https://ipapi.co/json/")
+      .then(function (r) { return r.json(); })
+      .then(function (geo) {
+        telemetryGeo = {
+          pais: geo.country_name || "",
+          regiao: geo.region || "",
+          cidade: geo.city || "",
+        };
+        sessionStorage.setItem(TELEMETRY_GEO_KEY, JSON.stringify(telemetryGeo));
+      })
+      .catch(function () { telemetryGeo = { pais: "", regiao: "", cidade: "" }; })
+      .finally(function () { sendTelemetry("page_view", location.pathname); });
+  }
+
+  // NÃO chamamos initGeoAndTrackPageView() aqui embaixo — o rastreamento
+  // só começa depois que o token é validado (ver Seção 1, função unlock),
+  // porque é o token que identifica qual empresa está acessando.
+
+  // tempo de permanência — enviado quando o visitante sai/troca de aba,
+  // via sendBeacon (mais confiável que fetch nesse momento específico)
+  function sendDurationBeacon() {
+    if (!TELEMETRY_URL) return;
+    const tempoS = Math.round((Date.now() - pageLoadedAt) / 1000);
+    const payload = {
+      token: telemetryToken,
+      session_id: getSessionId(),
+      evento: "session_duration",
+      detalhe: location.pathname,
+      pais: telemetryGeo ? telemetryGeo.pais : "",
+      regiao: telemetryGeo ? telemetryGeo.regiao : "",
+      cidade: telemetryGeo ? telemetryGeo.cidade : "",
+      tempo_s: tempoS,
+    };
+    try {
+      navigator.sendBeacon(TELEMETRY_URL, new Blob([JSON.stringify(payload)], { type: "text/plain" }));
+    } catch (err) { /* noop */ }
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") sendDurationBeacon();
+  });
+  window.addEventListener("pagehide", sendDurationBeacon);
+
+  /* =================================================================
+     0.6) TELEMETRIA DE IDIOMA
+     Registra tanto QUAL idioma foi escolhido (clique real do usuário,
+     seja no login ou na navegação) quanto QUANTO TEMPO ele passou em
+     cada idioma (fecha o "segmento" anterior sempre que troca, e no
+     fim da sessão). Só começa a enviar depois do unlock() — antes
+     disso só guardamos o idioma atual em memória.
+     ================================================================= */
+
+  let telemetryStarted = false;
+  let langSegmentLang = null;
+  let langSegmentStart = null;
+
+  function flushLanguageSegment(viaBeacon) {
+    if (!TELEMETRY_URL || !telemetryStarted || !langSegmentLang || !langSegmentStart) return;
+    const tempoS = Math.round((Date.now() - langSegmentStart) / 1000);
+    if (tempoS <= 0) return;
+    const payload = {
+      token: telemetryToken,
+      session_id: getSessionId(),
+      evento: "language_duration",
+      detalhe: langSegmentLang,
+      pais: telemetryGeo ? telemetryGeo.pais : "",
+      regiao: telemetryGeo ? telemetryGeo.regiao : "",
+      cidade: telemetryGeo ? telemetryGeo.cidade : "",
+      tempo_s: tempoS,
+    };
+    try {
+      if (viaBeacon) {
+        navigator.sendBeacon(TELEMETRY_URL, new Blob([JSON.stringify(payload)], { type: "text/plain" }));
+      } else {
+        fetch(TELEMETRY_URL, {
+          method: "POST", mode: "no-cors", keepalive: true,
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload),
+        });
+      }
+    } catch (err) { /* noop */ }
+  }
+
+  function startLanguageTelemetry() {
+    telemetryStarted = true;
+    langSegmentLang = (typeof window.i360GetLang === "function") ? window.i360GetLang() : "pt";
+    langSegmentStart = Date.now();
+  }
+
+  // o i18n.js dispara este evento toda vez que o idioma muda — seja pelo
+  // clique real do usuário (origin "click") ou pela aplicação automática
+  // do idioma salvo ao carregar a página (origin "init")
+  document.addEventListener("i360:langchange", function (e) {
+    const novoLang = e.detail && e.detail.lang;
+    const origem = e.detail && e.detail.origin;
+    if (!novoLang) return;
+
+    if (telemetryStarted) {
+      flushLanguageSegment(false); // fecha o segmento do idioma anterior
+      if (origem === "click") sendTelemetry("language_change", novoLang);
+    }
+    langSegmentLang = novoLang;
+    langSegmentStart = Date.now();
+  });
+
+  // fecha o segmento de idioma em aberto junto com o fim da sessão
+  window.addEventListener("pagehide", function () { flushLanguageSegment(true); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") flushLanguageSegment(true);
+  });
+
+  /* =================================================================
+     0.5) BANNER HERO: imagem estática ↔ vídeo em loop
+     Fica 5s estático, roda o vídeo uma vez, volta a ficar estático por
+     5s, e repete indefinidamente. Sem controles, sem play/pause/tela
+     cheia — puramente decorativo. Só começa depois do unlock() (não
+     desperdiça banda/bateria enquanto o visitante ainda está no login).
+     ================================================================= */
+
+  const HERO_STATIC_MS = 5000;
+
+  function startHeroVideoLoop() {
+    const heroVideo = document.querySelector(".hero-video");
+    if (!heroVideo) return;
+
+    function tocarDepoisDaPausa() {
+      setTimeout(function () {
+        heroVideo.currentTime = 0;
+        const p = heroVideo.play();
+        if (p && p.catch) p.catch(function () { /* autoplay bloqueado — mantém a imagem estática, sem quebrar nada */ });
+        heroVideo.classList.add("is-active");
+      }, HERO_STATIC_MS);
+    }
+
+    heroVideo.addEventListener("ended", function () {
+      heroVideo.classList.remove("is-active");
+      tocarDepoisDaPausa();
+    });
+
+    tocarDepoisDaPausa();
+  }
+
+  /* =================================================================
+     1) VALIDAÇÃO DE TOKEN
+     Formato: EMP-<base64(DDMMAAHHMMSS + 3 chars aleatórios, invertido)>
+     Válido por 15 dias a partir da data/hora codificada no token.
+     Este é o MESMO algoritmo que os geradores privados (Python, offline)
+     usam para criar os tokens — aqui só decodificamos e conferimos.
+     O sufixo aleatório existe só para garantir tokens diferentes a cada
+     geração; para validar, usamos apenas os 12 primeiros dígitos
+     (data e hora) e ignoramos o resto.
+     ================================================================= */
+
+  const TOKEN_VALIDITY_DAYS = 15;
+
+  function decodeToken(rawToken) {
+    const token = rawToken.trim();
+    if (!token.startsWith("EMP-")) return null;
+
+    const encoded = token.slice(4);
+    let reversed;
+    try {
+      reversed = atob(encoded);
+    } catch (e) {
+      return null;
+    }
+
+    const original = reversed.split("").reverse().join("");
+    const ddmmaahhmmss = original.slice(0, 12);
+    if (!/^\d{12}$/.test(ddmmaahhmmss)) return null;
+
+    const dd = parseInt(ddmmaahhmmss.slice(0, 2), 10);
+    const mm = parseInt(ddmmaahhmmss.slice(2, 4), 10);
+    const yy = parseInt(ddmmaahhmmss.slice(4, 6), 10);
+    const hh = parseInt(ddmmaahhmmss.slice(6, 8), 10);
+    const mi = parseInt(ddmmaahhmmss.slice(8, 10), 10);
+    const ss = parseInt(ddmmaahhmmss.slice(10, 12), 10);
+
+    const issued = new Date(2000 + yy, mm - 1, dd, hh, mi, ss);
+    if (isNaN(issued.getTime())) return null;
+
+    return issued;
+  }
+
+  function isTokenValid(rawToken) {
+    const issued = decodeToken(rawToken);
+    if (!issued) return false;
+
+    const now = new Date();
+    const diffMs = now - issued;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    return diffDays >= -1 && diffDays <= TOKEN_VALIDITY_DAYS;
+  }
+
+  /* =================================================================
+     2) GATE — tela de login
+     ================================================================= */
+
+  const gateForm = document.getElementById("gate-form");
+  const gateInput = document.getElementById("gate-token");
+  const gateError = document.getElementById("gate-error");
+  const gateCard = document.querySelector(".gate-card");
+  const gateFormWrap = document.getElementById("gate-form-wrap");
+  const gateExpiredPanel = document.getElementById("gate-expired");
+
+  const SESSION_KEY = "i360_session_ok";
+
+  function unlock(token) {
+    document.body.classList.add("unlocked");
+    sessionStorage.setItem(SESSION_KEY, "1");
+    telemetryToken = token || "";
+    sessionStorage.setItem(TELEMETRY_TOKEN_KEY, telemetryToken);
+    initGeoAndTrackPageView();
+    startHeroVideoLoop();
+    startLanguageTelemetry();
+  }
+
+  function showError(message) {
+    gateError.textContent = message;
+    gateCard.classList.remove("shake");
+    // força reflow para permitir repetir a animação
+    void gateCard.offsetWidth;
+    gateCard.classList.add("shake");
+  }
+
+  function showExpired() {
+    if (gateFormWrap) gateFormWrap.style.display = "none";
+    if (gateExpiredPanel) gateExpiredPanel.style.display = "block";
+  }
+
+  if (gateForm) {
+    gateForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const value = gateInput.value;
+
+      const issued = decodeToken(value);
+      if (!issued) {
+        showError("[ ERRO: CHAVE INVÁLIDA. VERIFIQUE SEU BRIEFING. ]");
+        gateInput.value = "";
+        gateInput.focus();
         return;
       }
 
-      cart = [];
-      appliedCoupon = null;
-      checkoutStep = 1;
-      persistCart();
-      saveJSON('brasa_coupon', null);
-      renderCart();
-      checkoutData.idempotencyKey = null; // pedido concluído — próxima compra usa uma chave nova
-      persistCheckoutDraft();
-
-      if (checkoutData.pagamento === 'pix') {
-        openPixPaymentModal(data);
-      } else if (checkoutData.pagamento === 'dinheiro') {
-        lastOrder = { code: String(data.orderNumber), items: [], total: data.total, createdAt: Date.now(), status: 'recebido', customer: checkoutData };
-        saveJSON('brasa_last_order', lastOrder);
-        closeAllOverlays();
-        showToast('Pedido confirmado! Pague na entrega/retirada.');
-        trackFoundOrder = true;
-        setTimeout(() => openTrackModal(), 260);
-      } else {
-        showToast('Redirecionando para o pagamento...');
-        window.location.href = data.checkoutUrl;
+      const diffDays = (new Date() - issued) / (1000 * 60 * 60 * 24);
+      if (diffDays > TOKEN_VALIDITY_DAYS) {
+        showExpired();
+        return;
       }
-    } catch (e) {
-      showToast('Erro de conexão ao gerar o pagamento. Tente novamente.', 'error');
-    } finally {
-      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmar pedido'; }
-      orderSubmitInFlight = false;
-    }
-  }
+      if (diffDays < -1) {
+        showError("[ ERRO: CHAVE INVÁLIDA. VERIFIQUE SEU BRIEFING. ]");
+        gateInput.value = "";
+        gateInput.focus();
+        return;
+      }
 
-  /* -------- Pagamento Pix real (Mercado Pago) -------- */
-  let pixPollTimer = null;
-  function openPixPaymentModal(data) {
-    document.getElementById('cartDrawer').classList.remove('is-open');
-    const content = document.getElementById('pixPaymentContent');
-    content.innerHTML = `
-      <button class="modal__close" id="closePixModalBtn" aria-label="Fechar">✕</button>
-      <div style="text-align:center; padding:8px 4px;">
-        <h3 style="margin:0 0 4px;">Pague com Pix</h3>
-        <p class="muted" style="margin:0 0 16px;">Pedido ${escapeHtmlLite(String(data.orderNumber || ''))} — ${formatBRL(data.total)}</p>
-        ${data.qrCodeBase64 ? `<img src="data:image/png;base64,${data.qrCodeBase64}" alt="QR Code Pix" style="width:220px; height:220px; margin:0 auto 16px; display:block; border-radius:12px; background:#fff; padding:8px;">` : '<p class="muted">QR Code indisponível — use o código abaixo.</p>'}
-        <label style="display:block; text-align:left; font-size:.8rem; color:var(--muted,#999); margin-bottom:6px;">Pix Copia e Cola</label>
-        <textarea readonly id="pixCopiaColaText" style="width:100%; min-height:70px; resize:none; font-size:.75rem; padding:8px; border-radius:8px;">${data.qrCodeCopiaCola || ''}</textarea>
-        <button class="btn btn-secondary" id="copyPixBtn" style="margin-top:10px; width:100%;">Copiar código Pix</button>
-        <p class="muted" style="margin:16px 0 0; font-size:.85rem;">Aguardando confirmação do pagamento...</p>
-      </div>
-    `;
-    document.getElementById('closePixModalBtn').addEventListener('click', closeAllOverlays);
-    document.getElementById('copyPixBtn').addEventListener('click', () => {
-      navigator.clipboard.writeText(data.qrCodeCopiaCola || '').then(() => showToast('Código Pix copiado!'));
+      gateError.textContent = "";
+      unlock(value.trim());
     });
-    openOverlay('pixPaymentModal');
-    startPixPolling(data.orderNumber, checkoutData.email, data.total);
   }
 
-  function startPixPolling(orderNumber, email, total) {
-    stopPixPolling();
-    pixPollTimer = setInterval(async () => {
-      if (!window.sb) return;
-      const { data: rows, error } = await window.sb.rpc('get_order_status', {
-        p_email: email,
-        p_order_number: String(orderNumber),
-      });
-      if (error) { console.warn('Erro ao verificar status do pedido:', error); return; }
-      const status = rows && rows[0] && rows[0].payment_status;
-      if (status === 'pago') {
-        stopPixPolling();
-        lastOrder = { code: String(orderNumber), items: [], total, createdAt: Date.now(), status: 'recebido', customer: checkoutData };
-        saveJSON('brasa_last_order', lastOrder);
-        closeAllOverlays();
-        showToast('Pagamento confirmado! Pedido em preparo. 🔥');
-        trackFoundOrder = true;
-        setTimeout(() => openTrackModal(), 260);
-      }
-    }, 4000);
-  }
-  function stopPixPolling() { if (pixPollTimer) { clearInterval(pixPollTimer); pixPollTimer = null; } }
-
-  /* ============================================================
-     ACOMPANHAMENTO DE PEDIDO
-     ============================================================ */
-  const ORDER_STAGES = [
-    { id: 'recebido', label: 'Pedido recebido' },
-    { id: 'confirmado', label: 'Confirmado pela loja' },
-    { id: 'preparo', label: 'Em preparo na brasa' },
-    { id: 'saiu', label: 'Saiu para entrega' },
-    { id: 'entregue', label: 'Entregue — bom apetite!' },
-  ];
-
-  function openTrackModal() {
-    renderTrackModal();
-    openOverlay('trackModal');
-  }
-
-  function renderTrackModal() {
-    const el = document.getElementById('trackModalContent');
-
-    if (!trackFoundOrder) {
-      el.innerHTML = `
-        <span class="quick-access__eyebrow">Acompanhamento</span>
-        <h2 style="text-transform:none; letter-spacing:0; margin:4px 0 8px;">Acompanhar pedido</h2>
-        <p style="color:var(--lm-text-2); font-size:0.88rem; margin-bottom:18px;">Informe o e-mail e o número do pedido usados na compra.</p>
-        <div class="field">
-          <label for="trackEmailInput">E-mail</label>
-          <input type="email" id="trackEmailInput" placeholder="voce@email.com">
-        </div>
-        <div class="field">
-          <label for="trackOrderNumberInput">Número do pedido</label>
-          <input type="text" id="trackOrderNumberInput" placeholder="#1000">
-          <div class="field-error-msg" id="trackEmailErr">Não encontramos esse pedido com esse e-mail.</div>
-        </div>
-        <button class="btn btn-primary" id="trackSubmitBtn" style="width:100%; justify-content:center; margin-top:6px;">Consultar pedido →</button>`;
-      document.getElementById('trackSubmitBtn').addEventListener('click', async () => {
-        const email = document.getElementById('trackEmailInput').value.trim().toLowerCase();
-        let orderNumber = document.getElementById('trackOrderNumberInput').value.trim();
-        if (orderNumber && !orderNumber.startsWith('#')) orderNumber = '#' + orderNumber;
-        if (!email.includes('@') || !orderNumber) {
-          toggleFieldError('trackOrderNumberInput', 'trackEmailErr', true);
-          document.getElementById('trackEmailErr').textContent = 'Preencha e-mail e número do pedido.';
-          return;
-        }
-
-        // Se for o pedido que acabou de ser feito nesta mesma sessão, não precisa nem
-        // consultar o banco — já temos tudo aqui (funciona até sem internet/Supabase).
-        const localEmail = lastOrder && lastOrder.customer ? (lastOrder.customer.email || '').toLowerCase() : '';
-        if (lastOrder && localEmail === email && String(lastOrder.code) === orderNumber) {
-          trackFoundOrder = true;
-          renderTrackModal();
-          return;
-        }
-
-        if (!window.sb) {
-          toggleFieldError('trackOrderNumberInput', 'trackEmailErr', true);
-          document.getElementById('trackEmailErr').textContent = 'Não encontramos esse pedido nesta sessão.';
-          return;
-        }
-
-        const submitBtn = document.getElementById('trackSubmitBtn');
-        submitBtn.disabled = true; submitBtn.textContent = 'Consultando...';
-        const { data: rows, error } = await window.sb.rpc('get_order_status', { p_email: email, p_order_number: orderNumber });
-        submitBtn.disabled = false; submitBtn.textContent = 'Consultar pedido →';
-
-        const row = rows && rows[0];
-        if (error || !row) {
-          toggleFieldError('trackOrderNumberInput', 'trackEmailErr', true);
-          document.getElementById('trackEmailErr').textContent = error && error.message && error.message.includes('tentativas')
-            ? error.message
-            : 'Não encontramos esse pedido com esse e-mail.';
-          return;
-        }
-        lastOrder = {
-          code: row.order_number, total: Number(row.total), createdAt: new Date(row.created_at).getTime(),
-          status: mapOrderStatusToStage(row.order_status, row.payment_status),
-          items: [], itemCount: Number(row.item_count) || 0,
-          customer: { email }, _real: true, // _real: veio do banco de verdade, não é pedido local/demo
-        };
-        saveJSON('brasa_last_order', lastOrder);
-        trackFoundOrder = true;
-        renderTrackModal();
-      });
-      return;
+  // Revalida a sessão a cada carregamento — se não houver token
+  // validado nesta aba (sessionStorage), a tela de login volta a
+  // aparecer mesmo que o usuário tenha salvo o link nos favoritos.
+  window.addEventListener("DOMContentLoaded", function () {
+    if (sessionStorage.getItem(SESSION_KEY) === "1") {
+      document.body.classList.add("unlocked");
+      telemetryToken = sessionStorage.getItem(TELEMETRY_TOKEN_KEY) || "";
+      initGeoAndTrackPageView();
+      startHeroVideoLoop();
+      startLanguageTelemetry();
     }
-
-    if (!lastOrder) {
-      el.innerHTML = `<h2 style="margin-bottom:10px;">Acompanhar pedido</h2>
-        <p style="color:var(--lm-text-2); font-size:0.9rem;">Você ainda não fez nenhum pedido nesta sessão.</p>`;
-      return;
-    }
-    if (lastOrder.status === 'cancelado') {
-      el.innerHTML = `
-        <div class="track-success">
-          <div class="check-circle" style="background:var(--danger,#e5484d);">✕</div>
-          <h2 style="text-transform:none; letter-spacing:0;">Pedido ${lastOrder.code} cancelado</h2>
-          <p style="color:var(--text-secondary); font-size:0.88rem;">Esse pedido foi cancelado. Qualquer dúvida, fale com a gente pelo WhatsApp.</p>
-        </div>
-        <button class="btn btn-secondary" id="closeTrackBtn" style="width:100%; justify-content:center; margin-top:8px;">Fechar</button>`;
-      document.getElementById('closeTrackBtn').addEventListener('click', closeAllOverlays);
-      return;
-    }
-    const currentIdx = ORDER_STAGES.findIndex(s => s.id === lastOrder.status);
-    const itemCount = lastOrder.itemCount !== undefined ? lastOrder.itemCount : lastOrder.items.reduce((s, i) => s + i.qty, 0);
-    el.innerHTML = `
-      <div class="track-success">
-        <div class="check-circle">🔥</div>
-        <h2 style="text-transform:none; letter-spacing:0;">Pedido ${lastOrder.code} confirmado</h2>
-        <p style="color:var(--text-secondary); font-size:0.88rem;">${formatBRL(lastOrder.total)} · ${itemCount} itens</p>
-      </div>
-      <div class="timeline">
-        ${ORDER_STAGES.map((s, i) => `
-          <div class="timeline-item ${i < currentIdx ? 'is-done' : ''} ${i === currentIdx ? 'is-current' : ''}">
-            <div class="dot-col">
-              <div class="dot">${i < currentIdx ? '✓' : ''}</div>
-              ${i < ORDER_STAGES.length - 1 ? '<div class="line"></div>' : ''}
-            </div>
-            <div class="label">${s.label}</div>
-          </div>`).join('')}
-      </div>
-      <button class="btn btn-secondary" id="closeTrackBtn" style="width:100%; justify-content:center; margin-top:8px;">Fechar</button>`;
-    document.getElementById('closeTrackBtn').addEventListener('click', closeAllOverlays);
-
-    if (lastOrder._real) {
-      // Pedido de verdade: consulta o status real no banco de tempos em tempos
-      // (reflete o que a loja atualiza no admin), nunca "finge" progresso.
-      if (currentIdx < ORDER_STAGES.length - 1) startTrackPolling(lastOrder.code, lastOrder.customer.email);
-    } else if (currentIdx < ORDER_STAGES.length - 1 && !lastOrder._simRunning) {
-      // Modo demonstração (sem Supabase conectado) — avança sozinho só pra fins de apresentação.
-      lastOrder._simRunning = true;
-      simulateProgress();
-    }
-  }
-
-  let trackPollTimer = null;
-  function startTrackPolling(orderNumber, email) {
-    if (trackPollTimer) clearInterval(trackPollTimer);
-    trackPollTimer = setInterval(async () => {
-      if (!window.sb || !document.getElementById('trackModal').classList.contains('is-open')) {
-        clearInterval(trackPollTimer); trackPollTimer = null; return;
-      }
-      const { data: rows } = await window.sb.rpc('get_order_status', { p_email: email, p_order_number: String(orderNumber) });
-      const row = rows && rows[0];
-      if (!row) return;
-      const newStatus = mapOrderStatusToStage(row.order_status, row.payment_status);
-      if (newStatus !== lastOrder.status) {
-        lastOrder.status = newStatus;
-        saveJSON('brasa_last_order', lastOrder);
-        renderTrackModal();
-      }
-      const idx = ORDER_STAGES.findIndex(s => s.id === newStatus);
-      if (idx >= ORDER_STAGES.length - 1) { clearInterval(trackPollTimer); trackPollTimer = null; }
-    }, 10000);
-  }
-
-  function mapOrderStatusToStage(orderStatus, paymentStatus) {
-    if (orderStatus === 'cancelado') return 'cancelado';
-    const map = { novo: 'recebido', confirmado: 'confirmado', preparo: 'preparo', entrega: 'saiu', concluido: 'entregue' };
-    return map[orderStatus] || 'recebido';
-  }
-
-  function simulateProgress() {
-    const idx = ORDER_STAGES.findIndex(s => s.id === lastOrder.status);
-    if (idx >= ORDER_STAGES.length - 1) return;
-    setTimeout(() => {
-      lastOrder.status = ORDER_STAGES[idx + 1].id;
-      saveJSON('brasa_last_order', lastOrder);
-      if (document.getElementById('trackModal').classList.contains('is-open')) {
-        renderTrackModal();
-      }
-      simulateProgress();
-    }, 9000);
-  }
-
-  /* ============================================================
-     MODAL MINHA CONTA (ícone do header — Entrar / Fazer cadastro)
-     ============================================================ */
-  function openAccountModal() {
-    if (authUser) {
-      showToast(`Você já está logado como ${authUser.name}`);
-      return;
-    }
-    accountModalTab = 'entrar';
-    renderAccountModal();
-    openOverlay('accountModal');
-  }
-
-  function renderAccountModal() {
-    const el = document.getElementById('accountModalContent');
-    el.innerHTML = `
-      <span class="quick-access__eyebrow">Minha conta</span>
-      <h2 style="text-transform:none; letter-spacing:0; margin:4px 0 16px;">Acesse sua conta</h2>
-      <div class="mode-toggle" id="amTabs">
-        <button data-amtab="entrar" class="${accountModalTab === 'entrar' ? 'is-active' : ''}">Entrar</button>
-        <button data-amtab="cadastrar" class="${accountModalTab === 'cadastrar' ? 'is-active' : ''}">Fazer cadastro</button>
-      </div>
-      <div id="amFormArea"></div>`;
-    document.querySelectorAll('#amTabs [data-amtab]').forEach(b => b.addEventListener('click', () => {
-      accountModalTab = b.dataset.amtab;
-      renderAccountModal();
-    }));
-    renderAmForm();
-  }
-
-  function renderAmForm() {
-    const wrap = document.getElementById('amFormArea');
-    if (accountModalTab === 'entrar') {
-      wrap.innerHTML = `
-        <div class="field"><label>E-mail</label><input type="email" id="amEmail" placeholder="voce@email.com"></div>
-        <div class="field"><label>Senha</label><input type="password" id="amPass" placeholder="Sua senha"></div>
-        <button class="btn btn-primary" id="amSubmit" style="width:100%; justify-content:center;">Entrar</button>`;
-      document.getElementById('amSubmit').addEventListener('click', () => {
-        const email = document.getElementById('amEmail').value.trim();
-        if (!email.includes('@')) { showToast('Digite um e-mail válido', 'error'); return; }
-        authUser = { name: email.split('@')[0], email };
-        saveJSON('brasa_auth', authUser);
-        renderCart();
-        closeAllOverlays();
-        showToast('Login realizado com sucesso');
-      });
-    } else {
-      wrap.innerHTML = `
-        <div class="field"><label>Nome</label><input type="text" id="amName" placeholder="Seu nome"></div>
-        <div class="field"><label>WhatsApp</label><input type="tel" id="amWhats" placeholder="(11) 90000-0000"></div>
-        <div class="field"><label>E-mail</label><input type="email" id="amEmail2" placeholder="voce@email.com"></div>
-        <div class="field"><label>Senha</label><input type="password" id="amPass2" placeholder="Mínimo de 10 caracteres"></div>
-        <button class="btn btn-primary" id="amSubmit2" style="width:100%; justify-content:center;">Criar minha conta</button>`;
-      document.getElementById('amSubmit2').addEventListener('click', () => {
-        const name = document.getElementById('amName').value.trim();
-        const email = document.getElementById('amEmail2').value.trim();
-        const pass = document.getElementById('amPass2').value;
-        if (!name) { showToast('Digite seu nome', 'error'); return; }
-        if (!email.includes('@')) { showToast('Digite um e-mail válido', 'error'); return; }
-        if (pass.length < 10) { showToast('A senha precisa ter no mínimo 10 caracteres', 'error'); return; }
-        authUser = { name, email };
-        saveJSON('brasa_auth', authUser);
-        renderCart();
-        closeAllOverlays();
-        showToast('Conta criada com sucesso');
-      });
-    }
-  }
-
-  document.getElementById('openAccountBtn').addEventListener('click', openAccountModal);
-
-  /* ============================================================
-     OVERLAYS (backdrop, drawer, modais)
-     ============================================================ */
-  function openOverlay(id) {
-    document.getElementById('backdrop').classList.add('is-open');
-    document.getElementById(id).classList.add('is-open');
-  }
-  function closeAllOverlays() {
-    document.getElementById('backdrop').classList.remove('is-open');
-    ['cartDrawer', 'productModal', 'accountModal', 'trackModal', 'pixPaymentModal'].forEach(id => {
-      document.getElementById(id).classList.remove('is-open');
-    });
-    stopPixPolling();
-  }
-
-  document.getElementById('backdrop').addEventListener('click', closeAllOverlays);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllOverlays(); });
-
-  document.getElementById('openCartBtn').addEventListener('click', () => openOverlay('cartDrawer'));
-  document.getElementById('mobileCartBar').addEventListener('click', () => openOverlay('cartDrawer'));
-  document.getElementById('closeCartBtn').addEventListener('click', closeAllOverlays);
-  document.getElementById('openTrackBtn').addEventListener('click', () => { trackFoundOrder = false; openTrackModal(); });
-
-  /* ============================================================
-     CATEGORIAS
-     ============================================================ */
-  document.getElementById('categoryScroll').addEventListener('click', (e) => {
-    const chip = e.target.closest('.chip');
-    if (!chip) return;
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('is-active'));
-    chip.classList.add('is-active');
-    activeCategory = chip.dataset.cat;
-    renderMenu();
-    // Rola até o cardápio depois de trocar de categoria — sem isso, se a pessoa
-    // estiver longe dessa seção (ex: lendo o FAQ), o conteúdo troca fora da tela
-    // e parece que o botão não fez nada.
-    document.getElementById('cardapio').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  /* ============================================================
-     TEMA CLARO/ESCURO
-     ============================================================ */
-  function applyTheme(theme) {
-    document.body.setAttribute('data-theme', theme);
-    document.getElementById('themeToggle').textContent = theme === 'dark' ? '🌙' : '☀️';
-    saveJSON('brasa_theme', theme);
-  }
-  document.getElementById('themeToggle').addEventListener('click', () => {
-    const current = document.body.getAttribute('data-theme');
-    applyTheme(current === 'dark' ? 'light' : 'dark');
+  /* =================================================================
+     3) PROTEÇÃO LEVE DE CONTEÚDO
+     Bloqueia cópia de texto e menu de contexto. Não tenta bloquear
+     DevTools, print screen ou impressão via força-bruta — apenas
+     desencoraja cópia casual do texto da página. A camada real de
+     proteção é o próprio gate de acesso acima.
+     ================================================================= */
+
+  document.body.classList.add("no-select");
+
+  document.addEventListener("contextmenu", function (e) {
+    // campos de formulário (token, nome, e-mail etc.) ficam de fora da
+    // proteção — no mobile, o toque longo é o único jeito de colar,
+    // já que não existe atalho de teclado (Ctrl+V) no celular
+    const tag = e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    e.preventDefault();
   });
-  applyTheme(loadJSON('brasa_theme', 'dark'));
 
-  /* ============================================================
-     LOJA ABERTA/FECHADA (com base no horário)
-     ============================================================ */
-  function updateStoreStatus() {
-    const now = new Date();
-    const day = now.getDay(); // 0 = domingo
-    const hour = now.getHours() + now.getMinutes() / 60;
-    const isOpenDay = day !== 1; // terça a domingo (fechado às segundas)
-    const isOpenHour = hour >= 18 && hour < 23.5;
-    const isOpen = isOpenDay && isOpenHour;
-    const dot = document.querySelector('.status-dot');
-    const text = document.getElementById('statusText');
-    if (isOpen) {
-      dot.style.background = 'var(--state-success)';
-      text.textContent = 'Aberto agora · entrega em 30–45 min';
-    } else {
-      dot.style.background = 'var(--state-danger)';
-      text.textContent = 'Fechado agora · abre às 18h';
-    }
-  }
-  updateStoreStatus();
+  document.addEventListener("copy", function (e) {
+    const tag = e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    e.preventDefault();
+  });
 
-  /* ============================================================
-     PARTÍCULAS DE BRASA (assinatura visual do hero)
-     ============================================================ */
-  function spawnEmbers() {
-    const container = document.getElementById('embers');
-    if (!container) return;
-    for (let i = 0; i < 24; i++) {
-      const ember = document.createElement('span');
-      ember.className = 'ember';
-      ember.style.left = Math.random() * 100 + '%';
-      ember.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
-      ember.style.animationDuration = (3 + Math.random() * 3) + 's';
-      ember.style.animationDelay = (Math.random() * 5) + 's';
-      container.appendChild(ember);
-    }
-  }
-  spawnEmbers();
+  document.addEventListener("dragstart", function (e) {
+    e.preventDefault();
+  });
 
-  /* ============================================================
-     FAQ (acordeão)
-     ============================================================ */
-  // Delegação de evento: um único listener no container inteiro, em vez de um
-  // listener por pergunta. Assim continua funcionando mesmo quando o site-sync
-  // substitui o conteúdo do FAQ (config vinda do admin) depois do carregamento
-  // inicial — um listener preso a elementos específicos morreria junto com eles.
-  function initFaq() {
-    const list = document.getElementById('faqList');
-    if (!list) return;
-    list.addEventListener('click', (e) => {
-      const question = e.target.closest('.faq-question');
-      if (!question) return;
-      const item = question.closest('.faq-item');
-      const answer = item.querySelector('.faq-answer');
-      const isOpen = item.classList.contains('is-open');
-      list.querySelectorAll('.faq-item.is-open').forEach(open => {
-        if (open !== item) {
-          open.classList.remove('is-open');
-          open.querySelector('.faq-answer').style.maxHeight = '';
-        }
-      });
-      item.classList.toggle('is-open', !isOpen);
-      answer.style.maxHeight = !isOpen ? answer.scrollHeight + 'px' : '';
-    });
-  }
-  initFaq();
+  /* =================================================================
+     4) PLAYER DE VÍDEO PROTEGIDO (YouTube IFrame API)
+     controls:0 remove a barra nativa do YouTube, mas NÃO impede que o
+     YouTube mostre, por conta própria, uma tela com avatar/nome do
+     canal quando o vídeo está pausado, em buffer ou finalizado — isso
+     não é configurável via API. Por isso usamos duas camadas nossas:
+       - uma tarja fixa no topo (sempre visível, tocando ou pausado)
+         que cobre fisicamente a área onde o YouTube desenha esse
+         cabeçalho;
+       - uma camada de cobertura total, visível sempre que o estado
+         não for "tocando" (carregando, pausado, ou finalizado), com
+         nosso próprio aviso e um clique para retomar.
+     ================================================================= */
 
-  /* ============================================================
-     INICIALIZAÇÃO
-     ============================================================ */
-  renderMenu();
-  renderCart();
-  if (lastOrder && lastOrder.status !== 'entregue') {
-    // retoma simulação de progresso se havia um pedido em andamento
-    lastOrder._simRunning = false;
+  const YT_PLAYERS = {};
+  const videoPlayTracked = {};
+  let ytApiReady = false;
+  let ytApiRequested = false;
+  const ytPendingBuilds = [];
+
+  function loadYouTubeApi() {
+    if (ytApiRequested) return;
+    ytApiRequested = true;
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
   }
 
-  // Exposto para js/site-sync.js poder redesenhar o cardápio assim que os
-  // dados reais chegarem do Supabase (a busca é assíncrona, então o primeiro
-  // desenho acima usa os dados de exemplo e este é chamado de novo em seguida).
-  window.__brasaRefreshMenu = renderMenu;
-  window.__brasaRefreshCart = renderCart;
-  // Usado pelo banner de oferta customizável (site-sync.js) pra poder linkar pra uma
-  // categoria específica em vez de só rolar a tela até o topo do cardápio.
-  window.__brasaGoToCategory = function (categoryId) {
-    const chip = document.querySelector(`.chip[data-cat="${categoryId}"]`);
-    if (chip) chip.click();
-    document.getElementById('cardapio').scrollIntoView({ behavior: 'smooth' });
+  window.onYouTubeIframeAPIReady = function () {
+    ytApiReady = true;
+    ytPendingBuilds.forEach(function (build) { build(); });
+    ytPendingBuilds.length = 0;
   };
+
+  function setPlayPauseIcon(playerId, isPlaying) {
+    const bar = document.querySelector('.custom-controls[data-controls-for="' + playerId + '"]');
+    if (!bar) return;
+    bar.querySelector(".icon-play").style.display = isPlaying ? "none" : "block";
+    bar.querySelector(".icon-pause").style.display = isPlaying ? "block" : "none";
+  }
+
+  function setCover(playerId, mode) {
+    // mode: "loading" | "paused" | "ended" | null (null = esconde a cobertura total,
+    // mas a tarja do topo nunca é escondida — ela é permanente via CSS)
+    const wrap = document.querySelector('.player[data-player-id="' + playerId + '"]');
+    if (!wrap) return;
+    const cover = wrap.querySelector(".yt-cover");
+    const label = wrap.querySelector(".yt-cover-text");
+
+    if (!mode) {
+      wrap.classList.remove("yt-covered");
+      return;
+    }
+    wrap.classList.add("yt-covered");
+    if (label) {
+      label.textContent =
+        mode === "loading" ? "Carregando vídeo…" :
+        mode === "ended" ? "Vídeo finalizado — clique para assistir de novo" :
+        "Pausado — clique para continuar";
+    }
+    if (cover) cover.setAttribute("data-mode", mode);
+  }
+
+  function startProgressLoop(playerId) {
+    const seek = document.querySelector('.cc-seek[data-seek-for="' + playerId + '"]');
+    if (!seek) return;
+    let dragging = false;
+
+    seek.addEventListener("pointerdown", function () { dragging = true; });
+    seek.addEventListener("pointerup", function () { dragging = false; });
+
+    seek.addEventListener("change", function () {
+      const player = YT_PLAYERS[playerId];
+      if (!player || typeof player.getDuration !== "function") return;
+      const duration = player.getDuration() || 0;
+      if (!duration) return;
+      player.seekTo(duration * (seek.value / 1000), true);
+    });
+
+    setInterval(function () {
+      const player = YT_PLAYERS[playerId];
+      if (!player || dragging || typeof player.getCurrentTime !== "function") return;
+      const duration = player.getDuration();
+      if (!duration) return;
+      seek.value = Math.round((player.getCurrentTime() / duration) * 1000);
+    }, 500);
+  }
+
+  function buildPlayer(playerId, videoId) {
+    const target = document.getElementById("yt-target-" + playerId);
+    if (!target) return;
+
+    setCover(playerId, "loading");
+
+    const player = new YT.Player(target, {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 0,        // remove 100% da barra nativa do YouTube
+        disablekb: 1,        // sem atalhos de teclado do YouTube
+        fs: 0,                // usamos nosso próprio botão de tela cheia
+        mute: 1,               // essencial: navegadores bloqueiam autoplay com
+                                // som, e o bloqueio deixava o player "parado" na
+                                // tela de pausa nativa do YouTube (com nome do
+                                // canal) em vez de tocar de fato. Sem áudio mesmo.
+        modestbranding: 1,
+        rel: 0,                // sem sugestões de outros canais ao terminar
+        iv_load_policy: 3,      // sem anotações/cards
+        cc_load_policy: 0,       // legenda desligada por padrão
+        playsinline: 1,
+        origin: window.location.origin,
+      },
+      events: {
+        onReady: function (e) {
+          try { e.target.mute(); } catch (err) { /* noop */ }
+          try { e.target.setPlaybackQuality("hd720"); } catch (err) { /* noop */ }
+          e.target.playVideo();
+        },
+        onStateChange: function (e) {
+          setPlayPauseIcon(playerId, e.data === YT.PlayerState.PLAYING);
+          if (e.data === YT.PlayerState.PLAYING) {
+            setCover(playerId, null);
+            if (!videoPlayTracked[playerId]) {
+              videoPlayTracked[playerId] = true;
+              sendTelemetry("video_play", playerId);
+            }
+          } else if (e.data === YT.PlayerState.ENDED) {
+            setCover(playerId, "ended");
+            sendTelemetry("video_complete", playerId);
+          } else if (e.data === YT.PlayerState.PAUSED) setCover(playerId, "paused");
+          else if (e.data === YT.PlayerState.BUFFERING) setCover(playerId, "loading");
+        },
+      },
+    });
+
+    YT_PLAYERS[playerId] = player;
+    startProgressLoop(playerId);
+  }
+
+  function togglePlayPause(playerId) {
+    const player = YT_PLAYERS[playerId];
+    if (!player || typeof player.getPlayerState !== "function") return;
+    if (player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
+    else player.playVideo();
+  }
+
+  document.querySelectorAll(".play-btn[data-youtube-id]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const wrap = btn.closest(".player");
+      const playerId = btn.getAttribute("data-player-id");
+      const videoId = btn.getAttribute("data-youtube-id");
+
+      wrap.classList.add("is-playing");
+      loadYouTubeApi();
+
+      const build = function () { buildPlayer(playerId, videoId); };
+      if (ytApiReady) build();
+      else ytPendingBuilds.push(build);
+    });
+  });
+
+  // escudo transparente sobre o vídeo: qualquer clique nele alterna
+  // play/pause através da API — o iframe do YouTube em si nunca recebe
+  // o clique (nem o hover), então nenhum ícone nativo dele aparece.
+  document.querySelectorAll(".yt-shield").forEach(function (shield) {
+    shield.addEventListener("click", function () {
+      togglePlayPause(shield.getAttribute("data-shield-for"));
+    });
+  });
+
+  // clicar na camada de cobertura (pausado/finalizado) retoma o vídeo,
+  // sem nunca expor a tela nativa do YouTube por trás
+  document.querySelectorAll(".yt-cover").forEach(function (cover) {
+    cover.addEventListener("click", function () {
+      const wrap = cover.closest(".player");
+      const playerId = wrap ? wrap.getAttribute("data-player-id") : null;
+      const player = YT_PLAYERS[playerId];
+      if (!player || typeof player.getPlayerState !== "function") return;
+      if (player.getPlayerState() === YT.PlayerState.ENDED) player.seekTo(0, true);
+      player.playVideo();
+    });
+  });
+
+  function setFullscreenIcon(bar, isFullscreen) {
+    const expand = bar.querySelector(".icon-expand");
+    const compress = bar.querySelector(".icon-compress");
+    if (expand) expand.style.display = isFullscreen ? "none" : "block";
+    if (compress) compress.style.display = isFullscreen ? "block" : "none";
+  }
+
+  document.querySelectorAll(".custom-controls").forEach(function (bar) {
+    const playerId = bar.getAttribute("data-controls-for");
+
+    const playBtn = bar.querySelector('[data-action="toggle-play"]');
+    if (playBtn) {
+      playBtn.addEventListener("click", function () {
+        togglePlayPause(playerId);
+      });
+    }
+
+    const fsBtn = bar.querySelector('[data-action="fullscreen"]');
+    if (fsBtn) {
+      fsBtn.addEventListener("click", function () {
+        const wrap = bar.closest(".player");
+        const current = document.fullscreenElement || document.webkitFullscreenElement;
+
+        if (current === wrap) {
+          // já está em tela cheia neste player -> sai (corrige o botão que
+          // só expandia e nunca voltava)
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } else {
+          if (wrap.requestFullscreen) wrap.requestFullscreen();
+          else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen();
+        }
+      });
+    }
+
+    ["fullscreenchange", "webkitfullscreenchange"].forEach(function (evt) {
+      document.addEventListener(evt, function () {
+        const wrap = bar.closest(".player");
+        const current = document.fullscreenElement || document.webkitFullscreenElement;
+        setFullscreenIcon(bar, current === wrap);
+      });
+    });
+
+    bar.querySelectorAll(".cc-q-btn").forEach(function (qBtn) {
+      qBtn.addEventListener("click", function () {
+        const player = YT_PLAYERS[playerId];
+        const quality = qBtn.getAttribute("data-quality");
+        if (player && typeof player.setPlaybackQuality === "function") {
+          try { player.setPlaybackQuality(quality); } catch (err) { /* noop */ }
+        }
+        bar.querySelectorAll(".cc-q-btn").forEach(function (b) { b.classList.remove("active"); });
+        qBtn.classList.add("active");
+      });
+    });
+  });
+
+
+  // Bloqueia o menu de contexto na nossa própria interface ao redor do
+  // player. IMPORTANTE — limitação técnica real: uma vez que o vídeo do
+  // YouTube carrega dentro do iframe, o conteúdo dentro dele pertence a
+  // outro domínio (youtube.com). Por política de segurança do navegador
+  // (same-origin policy), nenhuma página pode interceptar cliques/menu
+  // de contexto DENTRO de um iframe de outro domínio — isso não é uma
+  // configuração que falta, é uma barreira do próprio navegador. A
+  // única forma de eliminar 100% esse botão direito seria hospedar o
+  // vídeo como arquivo próprio (<video>), fora do YouTube.
+  document.querySelectorAll(".player").forEach(function (player) {
+    player.addEventListener("contextmenu", function (e) {
+      e.preventDefault();
+    });
+  });
+
+  /* =================================================================
+     5) FAQ — módulos recolhíveis
+     ================================================================= */
+
+  document.querySelectorAll(".faq-module-toggle").forEach(function (toggle) {
+    toggle.addEventListener("click", function () {
+      toggle.closest(".faq-module").classList.toggle("open");
+      sendTelemetry("faq_module_open", toggle.textContent.trim());
+    });
+  });
+
+  document.querySelectorAll(".faq-item").forEach(function (item) {
+    item.addEventListener("toggle", function () {
+      if (item.open) {
+        const q = item.querySelector("summary");
+        sendTelemetry("faq_question_open", q ? q.textContent.trim() : "");
+      }
+    });
+  });
+
+  /* =================================================================
+     6) MÉTRICAS — abas por app
+     ================================================================= */
+
+  document.querySelectorAll(".metrics-tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      const target = tab.getAttribute("data-target");
+
+      document.querySelectorAll(".metrics-tab").forEach(function (t) {
+        t.classList.remove("active");
+      });
+      document.querySelectorAll(".metrics-panel").forEach(function (p) {
+        p.classList.remove("active");
+      });
+
+      tab.classList.add("active");
+      document.getElementById(target).classList.add("active");
+      sendTelemetry("metrics_tab_view", tab.textContent.trim());
+    });
+  });
+
+  /* =================================================================
+     7) WIDGET DE CHAT FLUTUANTE (Card 4 — contato por e-mail)
+     Fluxo 100% simulado na interface + envio real via webhook do
+     Make.com. Troque WEBHOOK_URL pela URL gerada no seu cenário
+     do Make (módulo "Webhooks" → "Custom webhook").
+     ================================================================= */
+
+  const WEBHOOK_URL = "https://hook.us2.make.com/nnt4bqo787opnktqdu6e6xekiv7vjljf";
+
+  const chatFab = document.getElementById("chat-fab");
+  const chatWidget = document.getElementById("chat-widget");
+  const chatClose = document.getElementById("chat-close");
+  const chatForm = document.getElementById("chat-form");
+  const chatBody = document.getElementById("chat-body");
+  const chatIntro = document.getElementById("chat-intro");
+  const chatDynamic = document.getElementById("chat-dynamic");
+
+  let chatAutoCloseTimer = null;
+
+  function resetChatWidget() {
+    if (chatAutoCloseTimer) {
+      clearTimeout(chatAutoCloseTimer);
+      chatAutoCloseTimer = null;
+    }
+    if (chatIntro) chatIntro.style.display = "";
+    if (chatDynamic) chatDynamic.innerHTML = "";
+    if (chatForm) {
+      chatForm.reset();
+      chatForm.style.display = "";
+      const submitBtn = chatForm.querySelector("button[type=submit]");
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enviar informações";
+      }
+    }
+  }
+
+  function openChat() {
+    chatWidget.classList.add("open");
+    chatFab.classList.add("hidden");
+  }
+
+  function closeChat() {
+    chatWidget.classList.remove("open");
+    chatFab.classList.remove("hidden");
+    resetChatWidget(); // ao fechar, a próxima abertura já vem limpa
+  }
+
+  if (chatFab) chatFab.addEventListener("click", function () {
+    sendTelemetry("contact_click", "card4_fab_icon");
+    openChat();
+  });
+  if (chatClose) chatClose.addEventListener("click", closeChat);
+
+  document.querySelectorAll('.contact-card a.btn[href*="wa.me"]').forEach(function (link) {
+    link.addEventListener("click", function () {
+      sendTelemetry("contact_click", "whatsapp: " + link.textContent.trim());
+    });
+  });
+
+  document.querySelectorAll("[data-open-chat]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      sendTelemetry("contact_click", "card4_email_open");
+      openChat();
+    });
+  });
+
+  if (chatForm) {
+    chatForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      // honeypot: se esse campo (invisível para humanos) vier preenchido,
+      // é bot — finge sucesso e não gasta 1 crédito sequer do Make.com
+      if (chatForm.website && chatForm.website.value.trim() !== "") {
+        if (chatIntro) chatIntro.style.display = "none";
+        chatForm.style.display = "none";
+        chatDynamic.innerHTML = "";
+        const fakeSuccess = document.createElement("div");
+        fakeSuccess.className = "chat-msg";
+        fakeSuccess.textContent =
+          "Obrigado pelas informações! Assim que eu receber o seu contato aqui na minha caixa de entrada, analisarei o seu cenário e retornarei o mais breve possível para conversarmos. Tenha um excelente dia de trabalho!";
+        chatDynamic.appendChild(fakeSuccess);
+        chatAutoCloseTimer = setTimeout(closeChat, 4000);
+        return;
+      }
+
+      const submitBtn = chatForm.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "TRANSMITINDO DADOS DE AUTORIZAÇÃO...";
+
+      const payload = {
+        nome: chatForm.nome.value,
+        empresa: chatForm.empresa.value,
+        email: chatForm.email.value,
+        motivo: chatForm.motivo.value,
+        origem: "card4_chat_widget",
+        data: new Date().toISOString(),
+      };
+
+      try {
+        if (WEBHOOK_URL) {
+          await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        }
+
+        // sucesso: mostra só a mensagem final (esconde as de boas-vindas
+        // e o formulário) — nada de empilhar mensagem em cima de mensagem
+        if (chatIntro) chatIntro.style.display = "none";
+        chatForm.style.display = "none";
+        chatDynamic.innerHTML = "";
+        const success = document.createElement("div");
+        success.className = "chat-msg";
+        success.textContent =
+          "Obrigado pelas informações! Assim que eu receber o seu contato aqui na minha caixa de entrada, analisarei o seu cenário e retornarei o mais breve possível para conversarmos. Tenha um excelente dia de trabalho!";
+        chatDynamic.appendChild(success);
+        chatBody.scrollTop = chatBody.scrollHeight;
+
+        // fecha sozinho depois de alguns segundos, já deixando tudo
+        // resetado para a próxima vez que o ícone for clicado
+        chatAutoCloseTimer = setTimeout(closeChat, 4000);
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enviar informações";
+        chatDynamic.innerHTML = "";
+        const errorMsg = document.createElement("div");
+        errorMsg.className = "chat-msg";
+        errorMsg.style.color = "var(--orange)";
+        errorMsg.textContent =
+          "[ FALHA NA TRANSMISSÃO. VERIFIQUE SUA CONEXÃO E TENTE NOVAMENTE. ]";
+        chatDynamic.appendChild(errorMsg);
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+    });
+  }
+
+  /* =================================================================
+     8) POLIMENTO TÉCNICO — scroll-reveal e navegação ativa
+     ================================================================= */
+
+  // revela seções suavemente conforme entram na tela
+  if ("IntersectionObserver" in window) {
+    const revealObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    document.querySelectorAll(".reveal").forEach(function (el) {
+      revealObserver.observe(el);
+    });
+
+    // destaca o link da seção atual na navegação fixa
+    const navLinks = document.querySelectorAll('.sticky-nav a[data-nav]');
+    if (navLinks.length) {
+      const navObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            const id = entry.target.getAttribute("id");
+            navLinks.forEach(function (link) {
+              link.classList.toggle("active", link.getAttribute("href") === "#" + id);
+            });
+          });
+        },
+        { rootMargin: "-45% 0px -50% 0px" }
+      );
+      ["sobre", "jornada", "apps", "metricas", "faq", "contato"].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) navObserver.observe(el);
+      });
+    }
+  } else {
+    // sem suporte a IntersectionObserver: mostra tudo direto, sem animação
+    document.querySelectorAll(".reveal").forEach(function (el) {
+      el.classList.add("is-visible");
+    });
+  }
+
+  /* =================================================================
+     9) BADGES TÉCNICAS — métricas reais, medidas ao vivo neste
+     carregamento de página via APIs nativas do navegador (a mesma
+     base que ferramentas como o Lighthouse usam) — não são alegações
+     estáticas. Cada badge recalcula na hora em que é aberta.
+     ================================================================= */
+
+  let cwvLCP = null;
+  let cwvCLS = 0;
+  let cwvINP = null;
+
+  if ("PerformanceObserver" in window) {
+    try {
+      new PerformanceObserver(function (list) {
+        const entries = list.getEntries();
+        const last = entries[entries.length - 1];
+        if (last) cwvLCP = last.renderTime || last.loadTime || null;
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    } catch (err) { /* navegador sem suporte a este tipo de entrada */ }
+
+    try {
+      new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (entry) {
+          if (!entry.hadRecentInput) cwvCLS += entry.value;
+        });
+      }).observe({ type: "layout-shift", buffered: true });
+    } catch (err) { /* noop */ }
+
+    try {
+      new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (entry) {
+          if (cwvINP === null || entry.duration > cwvINP) cwvINP = entry.duration;
+        });
+      }).observe({ type: "event", buffered: true, durationThreshold: 40 });
+    } catch (err) { /* noop — navegador sem suporte a "event timing" */ }
+  }
+
+  function fmtMs(ms) {
+    return ms === null || ms === undefined ? null : (ms / 1000).toFixed(2) + "s";
+  }
+
+  function classeCwv(valor, bom, medio) {
+    if (valor === null || valor === undefined) return "na";
+    if (valor <= bom) return "good";
+    if (valor <= medio) return "mid";
+    return "bad";
+  }
+
+  function getResourceStats() {
+    const resources = performance.getEntriesByType("resource");
+    const nav = performance.getEntriesByType("navigation")[0];
+    let total = nav && nav.transferSize ? nav.transferSize : 0;
+    let semCorsCount = 0;
+    const porTipo = {};
+
+    resources.forEach(function (r) {
+      const tipo = r.initiatorType || "outro";
+      const bytes = r.transferSize || 0;
+      if (bytes === 0) semCorsCount++;
+      porTipo[tipo] = (porTipo[tipo] || 0) + bytes;
+      total += bytes;
+    });
+
+    return { total: total, porTipo: porTipo, count: resources.length + (nav ? 1 : 0), semCorsCount: semCorsCount };
+  }
+
+  function getRequestBreakdown() {
+    const resources = performance.getEntriesByType("resource");
+    const origin = location.origin;
+    let firstParty = 0;
+    const thirdPartyHosts = {};
+
+    resources.forEach(function (r) {
+      try {
+        const u = new URL(r.name);
+        if (u.origin === origin) firstParty++;
+        else thirdPartyHosts[u.hostname] = (thirdPartyHosts[u.hostname] || 0) + 1;
+      } catch (err) { /* noop */ }
+    });
+
+    return { firstParty: firstParty, thirdPartyHosts: thirdPartyHosts };
+  }
+
+  function fmtKB(bytes) {
+    return (bytes / 1024).toFixed(1) + " KB";
+  }
+
+  const badgeModalOverlay = document.getElementById("badge-modal-overlay");
+  const badgeModalTitle = document.getElementById("badge-modal-title");
+  const badgeModalBody = document.getElementById("badge-modal-body");
+  const badgeModalClose = document.getElementById("badge-modal-close");
+
+  function t(key, fallback) {
+    return (typeof window.i360GetText === "function") ? window.i360GetText(key, fallback) : fallback;
+  }
+
+  let lastBadgeType = null;
+
+  function openBadgeModal(tipo) {
+    lastBadgeType = tipo;
+    let title = "";
+    let html = "";
+
+    if (tipo === "bundle") {
+      const stats = getResourceStats();
+      title = t("badgeModal.bundle.title", "BUNDLE SIZE — MEDIÇÃO REAL");
+      html =
+        '<p>' + t("badgeModal.bundle.desc", 'Soma real de bytes transferidos nesta página, medida agora via <code>Performance API</code> do seu próprio navegador — inclui HTML, CSS, JS, fontes e imagens já carregadas até este momento.') + '</p>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.bundle.totalLabel", "Total transferido") + '</span><span class="metric-value good">' + fmtKB(stats.total) + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.bundle.requestsLabel", "Requisições feitas") + '</span><span class="metric-value">' + stats.count + '</span></div>' +
+        Object.keys(stats.porTipo).map(function (tipoRecurso) {
+          return '<div class="metric-row"><span class="metric-name">&nbsp;&nbsp;↳ ' + tipoRecurso + '</span><span class="metric-value">' + fmtKB(stats.porTipo[tipoRecurso]) + '</span></div>';
+        }).join("") +
+        '<div class="badge-disclaimer">' + t("badgeModal.bundle.disclaimer", "Recursos de terceiros (YouTube, fontes do Google) sem cabeçalho CORS liberado podem contar como 0 bytes aqui — é uma limitação do próprio navegador em medir origens externas, não do nosso código. O número tende a crescer conforme você navega e mais vídeos/seções carregam.") + '</div>';
+    }
+
+    if (tipo === "performance") {
+      title = t("badgeModal.performance.title", "PERFORMANCE — CORE WEB VITALS AO VIVO");
+      const lcpTxt = fmtMs(cwvLCP);
+      const clsTxt = cwvCLS.toFixed(3);
+      const inpTxt = cwvINP === null ? null : Math.round(cwvINP) + "ms";
+      html =
+        '<p>' + t("badgeModal.performance.desc", 'As mesmas métricas de campo que o Google usa para avaliar experiência real de uso — medidas neste exato carregamento, com a API nativa <code>PerformanceObserver</code> do seu navegador. Não é uma simulação de laboratório.') + '</p>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.performance.lcpLabel", "LCP — maior elemento renderizado") + '</span><span class="metric-value ' + classeCwv(cwvLCP, 2500, 4000) + '">' + (lcpTxt || t("badgeModal.performance.measuring", "medindo…")) + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.performance.clsLabel", "CLS — estabilidade visual") + '</span><span class="metric-value ' + classeCwv(cwvCLS, 0.1, 0.25) + '">' + clsTxt + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.performance.inpLabel", "INP — resposta à interação") + '</span><span class="metric-value ' + (inpTxt ? classeCwv(cwvINP, 200, 500) : "na") + '">' + (inpTxt || t("badgeModal.performance.waitingInteraction", "aguardando interação")) + '</span></div>' +
+        '<div class="badge-disclaimer">' + t("badgeModal.performance.disclaimer", 'INP só aparece depois que você clica em algo na página (é a definição da métrica — mede resposta a uma interação real). Se estiver "aguardando interação", clique em qualquer botão e reabra esta badge.') + '</div>';
+    }
+
+    if (tipo === "latency") {
+      const req = getRequestBreakdown();
+      const hosts = Object.keys(req.thirdPartyHosts);
+      title = t("badgeModal.latency.title", "ZERO SERVER LATENCY — ARQUITETURA CLIENT-SIDE");
+      html =
+        '<p>' + t("badgeModal.latency.desc", "Esta página não tem backend próprio — não existe um servidor nosso processando requisições. Tudo o que você vê é HTML/CSS/JS estático, servido direto do GitHub Pages, com a lógica rodando no seu navegador.") + '</p>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.latency.ownServerLabel", "Chamadas a servidor próprio (backend)") + '</span><span class="metric-value good">0</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.latency.staticRequestsLabel", "Requisições a arquivos estáticos (1st-party)") + '</span><span class="metric-value">' + req.firstParty + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">' + t("badgeModal.latency.thirdPartyLabel", "Serviços de terceiros em uso") + '</span><span class="metric-value">' + hosts.length + '</span></div>' +
+        (hosts.length
+          ? '<div class="metric-caption">' + hosts.join(", ") + '</div>'
+          : '') +
+        '<div class="badge-disclaimer">' + t("badgeModal.latency.disclaimer", "Serviços de terceiros (YouTube, geolocalização por IP, telemetria via Google Apps Script) existem, mas nenhum é um backend nosso — são chamadas diretas do seu navegador para APIs públicas de terceiros.") + '</div>';
+    }
+
+    if (tipo === "typesafe") {
+      title = t("badgeModal.typesafe.title", "TYPE-SAFE ARCHITECTURE — OS 5 APPS");
+      html =
+        '<p>' + t("badgeModal.typesafe.p1", 'Esta badge descreve a arquitetura dos <strong>5 aplicativos do portfólio</strong> (PMP-PMO, PCM-EAM/CMMS, BPM-CBOK, Lean Six Sigma, SST-SGG) — não desta landing page em si, que é HTML/CSS/JavaScript puro por design (mais leve, sem etapa de build).') + '</p>' +
+        '<p>' + t("badgeModal.typesafe.p2", "Os apps são construídos com TypeScript e TanStack, o que significa checagem de tipos em tempo de compilação (menos bugs silenciosos) e gerenciamento de estado/dados assíncronos consistente entre todos os módulos.") + '</p>' +
+        '<div class="badge-disclaimer">' + t("badgeModal.typesafe.disclaimer", "Quer ver o código ou uma demonstração técnica mais a fundo de algum app específico? É só chamar pelo WhatsApp ou e-mail na seção de contato.") + '</div>';
+    }
+
+    badgeModalTitle.textContent = title;
+    badgeModalBody.innerHTML = html;
+    badgeModalOverlay.classList.add("open");
+    sendTelemetry("badge_click", tipo);
+  }
+
+  document.addEventListener("i360:langchange", function () {
+    if (badgeModalOverlay && badgeModalOverlay.classList.contains("open") && lastBadgeType) {
+      openBadgeModal(lastBadgeType);
+    }
+  });
+
+  function closeBadgeModal() {
+    badgeModalOverlay.classList.remove("open");
+  }
+
+  document.querySelectorAll("[data-badge]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openBadgeModal(btn.getAttribute("data-badge"));
+    });
+  });
+  if (badgeModalClose) badgeModalClose.addEventListener("click", closeBadgeModal);
+  if (badgeModalOverlay) {
+    badgeModalOverlay.addEventListener("click", function (e) {
+      if (e.target === badgeModalOverlay) closeBadgeModal();
+    });
+  }
+
+  // rastreia cliques na navegação fixa e nos CTAs do hero
+  document.querySelectorAll('.sticky-nav a[data-nav]').forEach(function (link) {
+    link.addEventListener("click", function () {
+      sendTelemetry("nav_click", link.textContent.trim().toUpperCase());
+    });
+  });
+  document.querySelectorAll('[data-cta]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      sendTelemetry("nav_click", btn.getAttribute("data-cta") === "ver_5_apps" ? "VER OS 5 APPS" : "FALAR COM O EDUARDO");
+    });
+  });
 })();
