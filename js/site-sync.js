@@ -105,6 +105,47 @@
     });
   }
 
+  // Título/subtítulo do banner de topo (H1 grande)
+  function renderHero(storeInfo) {
+    if (!storeInfo) return;
+    const titleEl = document.getElementById('heroTitle');
+    const subtitleEl = document.getElementById('heroSubtitle');
+    if (titleEl && storeInfo.heroTitle) {
+      const lines = storeInfo.heroTitle.split('\n');
+      const first = (lines[0] || '').replace(/</g, '&lt;');
+      const second = (lines[1] || '').replace(/</g, '&lt;');
+      titleEl.innerHTML = second ? `${first} <br><em>${second}</em>` : first;
+    }
+    if (subtitleEl && storeInfo.heroSubtitle) {
+      subtitleEl.textContent = storeInfo.heroSubtitle;
+    }
+  }
+
+  // Texto do rodapé customizável (copyright + link) — configurado em
+  // Configurações → Texto do Rodapé. Se não tiver nada configurado, mantém
+  // o copyright automático de sempre (nome da loja) e some com a linha do link.
+  function renderFooterText(footerText, storeInfo) {
+    const copyEl = document.getElementById('footerCopy');
+    const linkWrapEl = document.getElementById('footerLinkWrap');
+    const linkEl = document.getElementById('footerLink');
+    if (copyEl) {
+      if (footerText && footerText.copyright) {
+        copyEl.textContent = footerText.copyright;
+      } else if (storeInfo && storeInfo.storeName) {
+        copyEl.textContent = `© ${new Date().getFullYear()} ${storeInfo.storeName}. Todos os direitos reservados.`;
+      }
+    }
+    if (linkWrapEl && linkEl) {
+      if (footerText && footerText.linkUrl) {
+        linkEl.href = footerText.linkUrl;
+        linkEl.textContent = footerText.linkUrl;
+        linkWrapEl.style.display = '';
+      } else {
+        linkWrapEl.style.display = 'none';
+      }
+    }
+  }
+
   function renderFooter(storeInfo, hours, payments) {
     const addrEl = document.getElementById('footerAddress');
     const hoursEl = document.getElementById('footerHours');
@@ -123,6 +164,10 @@
         brandNameEl.innerHTML = parts.length ? `${first} <span>${parts.join(' ')}</span>` : first;
       }
       document.title = document.title.replace(/^[^—]*/, storeInfo.storeName + ' ');
+    }
+    if (storeInfo && storeInfo.logoUrl) {
+      const logoEl = document.getElementById('brandLogo');
+      if (logoEl) logoEl.src = storeInfo.logoUrl;
     }
     if (storeInfo && addrEl) addrEl.innerHTML = `${(storeInfo.address || '').replace(/</g, '&lt;')}.`;
     if (hours && hoursEl) hoursEl.textContent = describeHours(hours);
@@ -272,8 +317,15 @@
         if (faqRow && Array.isArray(faqRow.value)) { window.FAQ_ITEMS = faqRow.value; renderFaq(faqRow.value); }
         const stepsRow = settingsRows.find(r => r.key === 'how_it_works');
         if (stepsRow && Array.isArray(stepsRow.value)) renderHowItWorks(stepsRow.value);
+        const themeRow = settingsRows.find(r => r.key === 'theme');
+        if (themeRow && themeRow.value && themeRow.value.backgroundColor) {
+          document.documentElement.style.setProperty('--bg-base', themeRow.value.backgroundColor);
+        }
+        var footerTextRow = settingsRows.find(r => r.key === 'footer_text');
       }
       renderFooter(storeInfoValue, hoursValue, paymentsValue);
+      renderHero(storeInfoValue);
+      renderFooterText(footerTextRow ? footerTextRow.value : null, storeInfoValue);
 
       if (typeof window.__brasaRefreshMenu === 'function') window.__brasaRefreshMenu();
       if (typeof window.__brasaRefreshCart === 'function') window.__brasaRefreshCart();
