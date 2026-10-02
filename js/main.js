@@ -215,7 +215,7 @@
      (data e hora) e ignoramos o resto.
      ================================================================= */
 
-  const TOKEN_VALIDITY_DAYS = 15;
+  const TOKEN_VALIDITY_DAYS = 60;
 
   function decodeToken(rawToken) {
     const token = rawToken.trim();
